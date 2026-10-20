@@ -34,7 +34,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     <div id="depositTabContent">
       <h2 class="section-title">How to deposit gold</h2>
       <p class="notice" style="margin-top:0">Go to the global market and buy Raw Copper for 1.05 gold from Bibo4414 , the amount you buy is the amount of gold you will be credited.</p>
-      <p class="notice">After your purchase is verified, the organizer will add the matching gold to your lottery balance.</p>
+      <p class="notice">After I verify your purchase, I will add the matching gold to your lottery balance.</p>
     </div>
     <div id="withdrawTabContent" class="hidden">
       <h2 class="section-title">Withdraw gold</h2>
@@ -53,7 +53,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     <div class="panel jackpot">
       <div class="gold-icon">✦</div><div class="eyebrow">Current prize pool</div>
       <div class="prize"><span id="pool">0</span> <small>gold</small></div>
-      <div class="hint">Every ticket adds to the community jackpot.</div><div class="eyebrow" style="margin-top:18px">Next draw</div><div id="countdown" class="countdown">No draw scheduled</div><div class="hint" id="drawDateLabel">The organizer has not set a draw time yet.</div>
+      <div class="hint">Every ticket adds to the community jackpot.</div><div class="eyebrow" style="margin-top:18px">Next draw</div><div id="countdown" class="countdown">No draw scheduled</div><div class="hint" id="drawDateLabel">I haven’t set a draw time yet.</div>
       <div class="statrow">
         <div class="stat"><strong id="ticketCount">0</strong><span>Tickets sold</span></div>
         <div class="stat"><strong id="playerCount">0</strong><span>Participants</span></div>
@@ -68,7 +68,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
         <div class="entry"><span>03 · Get unique ticket numbers</span><span>Lucky</span></div>
         <div class="entry"><span>04 · Watch the scheduled draw</span><span>Win!</span></div>
       </div>
-      <p class="notice">Parlamentum exchange: 1 Raw Copper purchased for 1 gold adds 1 gold to your lottery balance after the organizer verifies the purchase. Ticket price: 50 gold per ticket. Since each Raw Copper purchase costs 1 gold, each ticket requires 50 verified purchases (50 gold total).</p>
+      <p class="notice">Parlamentum exchange: 1 Raw Copper purchased for 1 gold adds 1 gold to your lottery balance after I verify the purchase. Ticket price: 50 gold per ticket. Since each Raw Copper purchase costs 1 gold, each ticket requires 50 verified purchases (50 gold total).</p>
     </div>
   </section>
   <section class="panel" id="accountPanel">
@@ -104,24 +104,24 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
   <section class="panel" style="margin-top:16px" id="historyPanel"><h2 class="section-title">📜 Past winners</h2><p class="hint">Completed draws are kept here for everyone to review.</p><div id="pastWinners" class="history-list"><div class="empty">No completed draws yet.</div></div></section>
   <section class="panel draw-box" style="margin-top:16px">
     <h2 class="section-title">🏆 Winning draw</h2>
-    <p class="hint">When ticket sales close, an organizer can draw one ticket at random. The winning ticket and its owner will appear here.</p>
+    <p class="hint">When ticket sales close, I can draw one ticket at random. The winning ticket and its owner will appear here.</p>
     <div id="winnerDisplay" class="empty">No winner drawn yet.</div>
     <details class="admin">
-      <summary>Organizer controls</summary>
+      <summary>My controls</summary>
       <div class="admin-content">
-        <div class="field"><label for="adminCode">Organizer password</label><input id="adminCode" type="password" placeholder="Enter organizer password" autocomplete="current-password"></div>
-        <div class="form-actions" style="margin-top:10px"><button class="btn goldbtn" id="unlockAdminBtn">Unlock organizer controls</button><button class="btn secondary hidden" id="lockAdminBtn">Lock controls</button></div>
+        <div class="field"><label for="adminCode">Admin password</label><input id="adminCode" type="password" placeholder="Enter admin password" autocomplete="current-password"></div>
+        <div class="form-actions" style="margin-top:10px"><button class="btn goldbtn" id="unlockAdminBtn">Unlock my controls</button><button class="btn secondary hidden" id="lockAdminBtn">Lock controls</button></div>
         <div id="adminProtectedControls" class="hidden">
         <div class="form-grid" style="margin-top:14px"><div class="field"><label for="creditUser">Player username to add gold to</label><input id="creditUser" maxlength="24" placeholder="Exact Parlamentum username"></div><div class="field"><label for="creditAmount">Gold to add (1 verified Raw Copper purchase = 1 gold)</label><input id="creditAmount" type="number" min="1" max="1000000" step="1" value="1"></div></div>
         <div class="form-actions"><button class="btn goldbtn" id="addCreditsBtn">Add verified gold</button></div>
         <p class="notice">Only add gold after you personally verify the matching Raw Copper purchase. Keep your own record of the in-game transaction to prevent duplicate crediting.</p>
         <div class="subpanel" style="margin-top:14px"><h3 style="margin:0 0 10px;font-size:1rem">💰 Prize pool controller</h3><p class="notice" style="margin-top:0">Set the exact prize pool for the current draw. Ticket purchases will continue adding 50 gold per ticket on top of your set adjustment.</p><div class="form-grid"><div class="field"><label for="prizePoolInput">New prize pool total (gold)</label><input id="prizePoolInput" type="number" min="0" max="1000000000" step="1" placeholder="Enter total gold"></div><div class="field"><label>Current prize pool</label><div class="balance-pill" style="margin:0"><strong id="adminCurrentPool">0</strong> gold</div></div></div><div class="form-actions"><button class="btn goldbtn" id="setPrizePoolBtn">Set prize pool</button><button class="btn secondary" id="resetPrizePoolBtn">Use ticket total only</button></div></div>
         <div class="admin-tools">
-          <div class="subpanel"><h3 style="margin:0 0 10px;font-size:1rem">📅 Draw schedule</h3><div class="field"><label for="drawDateInput">Scheduled draw date and time (UTC)</label><input id="drawDateInput" type="datetime-local"></div><div class="form-actions"><button class="btn goldbtn" id="scheduleBtn">Save draw time</button><button class="btn secondary" id="clearScheduleBtn">Clear</button></div><p class="notice">Enter the time in UTC (Coordinated Universal Time). When it passes, ticket sales close automatically. The organizer still needs to press “Close sales & draw winner” to select the winner.</p></div>
+          <div class="subpanel"><h3 style="margin:0 0 10px;font-size:1rem">📅 Draw schedule</h3><div class="field"><label for="drawDateInput">Scheduled draw date and time (UTC)</label><input id="drawDateInput" type="datetime-local"></div><div class="form-actions"><button class="btn goldbtn" id="scheduleBtn">Save draw time</button><button class="btn secondary" id="clearScheduleBtn">Clear</button></div><p class="notice">Enter the time in UTC (Coordinated Universal Time). When it passes, ticket sales close automatically. I still need to press “Close sales & draw winner” to select the winner.</p></div>
           <div class="subpanel"><h3 style="margin:0 0 10px;font-size:1rem">🔎 Player lookup</h3><div class="field"><label for="lookupUser">Username</label><input id="lookupUser" maxlength="24" placeholder="Enter exact username"></div><div class="form-actions"><button class="btn secondary" id="lookupBtn">Look up player</button></div><div id="lookupResult" class="notice">Look up a player to see their balance, tickets, and purchase history.</div></div>
         </div>
         <div class="subpanel" style="margin-top:12px"><h3 style="margin:0 0 10px;font-size:1rem">📤 Withdrawals pending</h3><p class="notice" style="margin-top:0">Review requested withdrawals. Completing a request removes it from this pending list; rejecting it refunds the reserved gold to the player.</p><div id="pendingWithdrawalsList" class="list"><div class="empty">No pending withdrawals.</div></div></div>
-        <div class="subpanel" style="margin-top:12px"><h3 style="margin:0 0 10px;font-size:1rem">🧾 Organizer activity log</h3><div id="auditLog" class="list audit-list"><div class="empty">No activity recorded yet.</div></div></div>
+        <div class="subpanel" style="margin-top:12px"><h3 style="margin:0 0 10px;font-size:1rem">🧾 My activity log</h3><div id="auditLog" class="list audit-list"><div class="empty">No activity recorded yet.</div></div></div>
         <div class="form-actions"><button class="btn goldbtn" id="drawBtn">Close sales & draw winner</button><button class="btn secondary" id="reopenBtn">Reopen next draw</button><button class="btn secondary" id="resetBtn">Reset all data</button></div>
         </div>
       </div>
@@ -149,7 +149,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
  function prizePool(){return Math.max(0,state.tickets.length*PRICE+(Number(state.prizePoolAdjustment)||0));}
  function save(){localStorage.setItem(KEY,JSON.stringify(state));}
  function audit(message){state.audit.unshift({message,date:new Date().toLocaleString('en-US',{timeZone:'UTC'})+' UTC'});state.audit=state.audit.slice(0,30);save();}
- function updateCountdown(){const el=$('countdown');if(!state.schedule){el.textContent='No draw scheduled';$('drawDateLabel').textContent='The organizer has not set a draw time yet.';return;}const target=new Date(state.schedule).getTime();if(!Number.isFinite(target)){el.textContent='Schedule unavailable';return;}const diff=target-Date.now();$('drawDateLabel').textContent='Scheduled for '+new Date(target).toLocaleString('en-US',{timeZone:'UTC'})+' UTC';if(diff<=0){el.textContent='Draw time reached';if(!state.closed){state.closed=true;audit('Ticket sales automatically closed at the scheduled draw time.');save();render();}return;}const days=Math.floor(diff/86400000),hours=Math.floor(diff%86400000/3600000),mins=Math.floor(diff%3600000/60000),secs=Math.floor(diff%60000/1000);el.textContent=(days?days+'d ':'')+String(hours).padStart(2,'0')+':'+String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');}
+ function updateCountdown(){const el=$('countdown');if(!state.schedule){el.textContent='No draw scheduled';$('drawDateLabel').textContent='I haven’t set a draw time yet.';return;}const target=new Date(state.schedule).getTime();if(!Number.isFinite(target)){el.textContent='Schedule unavailable';return;}const diff=target-Date.now();$('drawDateLabel').textContent='Scheduled for '+new Date(target).toLocaleString('en-US',{timeZone:'UTC'})+' UTC';if(diff<=0){el.textContent='Draw time reached';if(!state.closed){state.closed=true;audit('Ticket sales automatically closed at the scheduled draw time.');save();render();}return;}const days=Math.floor(diff/86400000),hours=Math.floor(diff%86400000/3600000),mins=Math.floor(diff%3600000/60000),secs=Math.floor(diff%60000/1000);el.textContent=(days?days+'d ':'')+String(hours).padStart(2,'0')+':'+String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');}
  function toast(msg){const el=$('toast');el.textContent=msg;el.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.style.display='none',2600);}
  function currentName(){return loggedIn || ''; }
  function saveAccounts(){localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(accounts));}
@@ -167,7 +167,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
    $('balance').textContent=fmt(name?wallet(name):0);
    $('topGoldBalance').textContent=fmt(name?wallet(name):0);
    $('requestWithdrawBtn').disabled=!name;
-   $('withdrawStatus').textContent=name?'Withdrawals are submitted for organizer review.':'Log in to request a withdrawal.';
+   $('withdrawStatus').textContent=name?'Your withdrawal request has been sent to me for review.':'Log in to request a withdrawal.';
    const myPending=state.withdrawals.filter(w=>w.owner===name);
    $('myPendingWithdrawals').innerHTML=myPending.length?myPending.map(w=>`<div class="entry"><span>Request #${w.id} · ${fmt(w.amount)} gold · Pending</span><span>Held</span></div>`).join(''):'<div class="empty">No pending withdrawals for your account.</div>';
    $('pendingWithdrawalsList').innerHTML=state.withdrawals.length?state.withdrawals.map(w=>`<div class="pending-withdrawal"><strong>${esc(w.owner)}</strong> requested <strong>${fmt(w.amount)} gold</strong><div class="hint">Request #${w.id} · ${esc(w.date)} UTC</div><div class="hint">Tell the player: List Raw Copper for ${fmt(w.amount)} gold on the global market.</div><div class="pending-actions"><button class="btn goldbtn" type="button" data-withdraw-complete="${w.id}">Mark completed</button><button class="btn secondary" type="button" data-withdraw-reject="${w.id}">Reject & refund</button></div></div>`).join(''):'<div class="empty">No pending withdrawals.</div>';
@@ -210,7 +210,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
  function completeWithdrawal(id){
    if(!authorized())return;
    const idx=state.withdrawals.findIndex(w=>Number(w.id)===id);if(idx<0){toast('Withdrawal request not found.');return;}
-   const w=state.withdrawals.splice(idx,1)[0];audit(`Withdrawal #${id} for ${w.owner} (${w.amount} gold) marked completed by organizer.`);save();render();toast(`Withdrawal #${id} marked completed.`);
+   const w=state.withdrawals.splice(idx,1)[0];audit(`Withdrawal #${id} for ${w.owner} (${w.amount} gold) marked completed by me.`);save();render();toast(`Withdrawal #${id} marked completed.`);
  }
  function rejectWithdrawal(id){
    if(!authorized())return;
@@ -243,10 +243,10 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
    audit(`${name} purchased ${qty} ticket${qty===1?'':'s'} for ${qty*PRICE} gold.`);save();render();toast(`${qty} ticket${qty===1?'':'s'} purchased! Good luck.`);
  });
  $('refreshBtn').addEventListener('click',()=>{render();toast('Display refreshed.');});
- function authorized(){if(!adminUnlocked){toast('Enter the organizer password and unlock the controls first.');return false;}return true;}
- $('unlockAdminBtn').addEventListener('click',()=>{if($('adminCode').value!==ADMIN){adminUnlocked=false;$('adminProtectedControls').classList.add('hidden');$('lockAdminBtn').classList.add('hidden');toast('Incorrect organizer password.');return;}adminUnlocked=true;$('adminProtectedControls').classList.remove('hidden');$('lockAdminBtn').classList.remove('hidden');$('unlockAdminBtn').classList.add('hidden');$('adminCode').disabled=true;toast('Organizer controls unlocked.');});
+ function authorized(){if(!adminUnlocked){toast('Enter the admin password and unlock my controls first.');return false;}return true;}
+ $('unlockAdminBtn').addEventListener('click',()=>{if($('adminCode').value!==ADMIN){adminUnlocked=false;$('adminProtectedControls').classList.add('hidden');$('lockAdminBtn').classList.add('hidden');toast('Incorrect admin password.');return;}adminUnlocked=true;$('adminProtectedControls').classList.remove('hidden');$('lockAdminBtn').classList.remove('hidden');$('unlockAdminBtn').classList.add('hidden');$('adminCode').disabled=true;toast('My controls unlocked.');});
  $('adminCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('unlockAdminBtn').click();});
- $('lockAdminBtn').addEventListener('click',()=>{adminUnlocked=false;$('adminProtectedControls').classList.add('hidden');$('lockAdminBtn').classList.add('hidden');$('unlockAdminBtn').classList.remove('hidden');$('adminCode').disabled=false;$('adminCode').value='';toast('Organizer controls locked.');});
+ $('lockAdminBtn').addEventListener('click',()=>{adminUnlocked=false;$('adminProtectedControls').classList.add('hidden');$('lockAdminBtn').classList.add('hidden');$('unlockAdminBtn').classList.remove('hidden');$('adminCode').disabled=false;$('adminCode').value='';toast('My controls locked.');});
  $('addCreditsBtn').addEventListener('click',()=>{
    if(!authorized())return;
    const name=$('creditUser').value.trim().slice(0,24);
@@ -271,17 +271,17 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
  $('reopenBtn').addEventListener('click',()=>{
    if(!authorized())return;
    state.tickets=[];state.nextNumber=1001;state.closed=false;state.winner=null;state.schedule=null;state.prizePoolAdjustment=0;
-   audit('Organizer opened a new draw.');save();render();toast('New draw opened. Wallet balances remain.');
+   audit('I opened a new draw.');save();render();toast('New draw opened. Wallet balances remain.');
  });
  $('resetBtn').addEventListener('click',()=>{
    if(!authorized())return;
    if(!confirm('Reset all wallets, tickets, and draw data? This cannot be undone.'))return;
    state=initial();adminUnlocked=false;$('adminCode').disabled=false;$('adminCode').value='';$('adminProtectedControls').classList.add('hidden');$('lockAdminBtn').classList.add('hidden');$('unlockAdminBtn').classList.remove('hidden');save();render();toast('All data reset.');
  });
- $('setPrizePoolBtn').addEventListener('click',()=>{if(!authorized())return;const desired=Number($('prizePoolInput').value);if(!Number.isSafeInteger(desired)||desired<0||desired>1000000000){toast('Enter a whole prize pool from 0 to 1,000,000,000 gold.');return;}state.prizePoolAdjustment=desired-(state.tickets.length*PRICE);audit(`Organizer set the prize pool to ${desired} gold.`);save();render();toast(`Prize pool set to ${fmt(desired)} gold.`);});
- $('resetPrizePoolBtn').addEventListener('click',()=>{if(!authorized())return;state.prizePoolAdjustment=0;audit('Organizer reset the prize pool to the ticket total.');save();render();toast('Prize pool now matches tickets sold.');});
- $('scheduleBtn').addEventListener('click',()=>{if(!authorized())return;const raw=$('drawDateInput').value;if(!raw){toast('Choose a date and time first.');return;}const target=new Date(raw+'Z').getTime();if(!Number.isFinite(target)||target<=Date.now()){toast('Choose a future UTC date and time.');return;}state.schedule=new Date(target).toISOString();state.closed=false;audit('Organizer scheduled the next draw for '+new Date(target).toLocaleString('en-US',{timeZone:'UTC'})+' UTC.');save();render();toast('UTC draw schedule saved.');});
- $('clearScheduleBtn').addEventListener('click',()=>{if(!authorized())return;state.schedule=null;audit('Organizer cleared the draw schedule.');save();render();toast('Draw schedule cleared.');});
+ $('setPrizePoolBtn').addEventListener('click',()=>{if(!authorized())return;const desired=Number($('prizePoolInput').value);if(!Number.isSafeInteger(desired)||desired<0||desired>1000000000){toast('Enter a whole prize pool from 0 to 1,000,000,000 gold.');return;}state.prizePoolAdjustment=desired-(state.tickets.length*PRICE);audit(`I set the prize pool to ${desired} gold.`);save();render();toast(`Prize pool set to ${fmt(desired)} gold.`);});
+ $('resetPrizePoolBtn').addEventListener('click',()=>{if(!authorized())return;state.prizePoolAdjustment=0;audit('I reset the prize pool to the ticket total.');save();render();toast('Prize pool now matches tickets sold.');});
+ $('scheduleBtn').addEventListener('click',()=>{if(!authorized())return;const raw=$('drawDateInput').value;if(!raw){toast('Choose a date and time first.');return;}const target=new Date(raw+'Z').getTime();if(!Number.isFinite(target)||target<=Date.now()){toast('Choose a future UTC date and time.');return;}state.schedule=new Date(target).toISOString();state.closed=false;audit('I scheduled the next draw for '+new Date(target).toLocaleString('en-US',{timeZone:'UTC'})+' UTC.');save();render();toast('UTC draw schedule saved.');});
+ $('clearScheduleBtn').addEventListener('click',()=>{if(!authorized())return;state.schedule=null;audit('I cleared the draw schedule.');save();render();toast('Draw schedule cleared.');});
  $('lookupBtn').addEventListener('click',()=>{if(!authorized())return;const name=$('lookupUser').value.trim();if(!name){toast('Enter a username to look up.');return;}const exists=Object.prototype.hasOwnProperty.call(accounts,name);const bal=state.wallets[name]||0;const tickets=state.tickets.filter(t=>t.owner===name);const total=tickets.length;$('lookupResult').innerHTML=`<strong>${esc(name)}</strong><br>Account registered: ${exists?'Yes':'No'}<br>Gold balance: ${fmt(bal)} gold<br>Tickets in current draw: ${total}<br>Ticket numbers: ${tickets.length?tickets.map(t=>'#'+t.number).join(', '):'None'}<br><span class="hint">Current-draw ticket purchases only; old draw tickets are in the draw history.</span>`;});
  // Restore the existing login, if present.
  updateAccountUI();
