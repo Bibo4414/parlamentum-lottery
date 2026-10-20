@@ -55,7 +55,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
       <div class="prize"><span id="pool">0</span> <small>gold</small></div>
       <div class="hint">Every ticket adds to the community jackpot.</div><div class="eyebrow" style="margin-top:18px">Next draw</div><div id="countdown" class="countdown">No draw scheduled</div><div class="hint" id="drawDateLabel">I haven’t set a draw time yet.</div>
       <div class="statrow">
-        <div class="stat"><strong id="ticketCount">0</strong><span>Tickets sold</span></div>
+        <div class="stat"><strong id="ticketCount">0</strong><span>Your tickets</span></div>
         <div class="stat"><strong id="playerCount">0</strong><span>Participants</span></div>
         <div class="stat"><strong id="drawStatus">Open</strong><span>Draw status</span></div>
       </div>
@@ -73,9 +73,10 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
   </section>
   <section class="panel" id="accountPanel">
     <h2 class="section-title" id="accountHeading">🔐 Account access</h2>
-    <p class="notice" id="accountIntro" style="margin-top:0">Create an account once, then log in with the same username and password on this browser.</p>
+    <p class="notice" id="accountIntro" style="margin-top:0">Create an account with an email, username, and password. Sign in from any device to access your shared balance and tickets.</p>
     <div class="form-grid" id="accountLoginFields">
       <div class="field"><label for="accountUsername">Username</label><input id="accountUsername" maxlength="24" placeholder="Choose a username" autocomplete="username"></div>
+      <div class="field"><label for="accountEmail">Email address</label><input id="accountEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
       <div class="field"><label for="accountPassword">Password (8+ characters)</label><input id="accountPassword" type="password" minlength="8" placeholder="Choose a password" autocomplete="current-password"></div>
     </div>
     <div class="form-actions" id="accountAuthActions"><button class="btn primary" id="createAccountBtn">Create account</button><button class="btn secondary" id="loginBtn">Log in</button><button class="btn secondary hidden" id="logoutBtn">Log out</button></div>
@@ -109,13 +110,14 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     <details class="admin">
       <summary>My controls</summary>
       <div class="admin-content">
-        <div class="field"><label for="adminCode">Admin password</label><input id="adminCode" type="password" placeholder="Enter admin password" autocomplete="current-password"></div>
+        <div class="field hidden"><label for="adminCode">Organizer verification</label><input id="adminCode" type="password" autocomplete="off"></div>
         <div class="form-actions" style="margin-top:10px"><button class="btn goldbtn" id="unlockAdminBtn">Unlock my controls</button><button class="btn secondary hidden" id="lockAdminBtn">Lock controls</button></div>
         <div id="adminProtectedControls" class="hidden">
         <div class="form-grid" style="margin-top:14px"><div class="field"><label for="creditUser">Player username to add gold to</label><input id="creditUser" maxlength="24" placeholder="Exact Parlamentum username"></div><div class="field"><label for="creditAmount">Gold to add (1 verified Raw Copper purchase = 1 gold)</label><input id="creditAmount" type="number" min="1" max="1000000" step="1" value="1"></div></div>
         <div class="form-actions"><button class="btn goldbtn" id="addCreditsBtn">Add verified gold</button></div>
         <p class="notice">Only add gold after you personally verify the matching Raw Copper purchase. Keep your own record of the in-game transaction to prevent duplicate crediting.</p>
         <div class="subpanel" style="margin-top:14px"><h3 style="margin:0 0 10px;font-size:1rem">💰 Prize pool controller</h3><p class="notice" style="margin-top:0">Set the exact prize pool for the current draw. Ticket purchases will continue adding 50 gold per ticket on top of your set adjustment.</p><div class="form-grid"><div class="field"><label for="prizePoolInput">New prize pool total (gold)</label><input id="prizePoolInput" type="number" min="0" max="1000000000" step="1" placeholder="Enter total gold"></div><div class="field"><label>Current prize pool</label><div class="balance-pill" style="margin:0"><strong id="adminCurrentPool">0</strong> gold</div></div></div><div class="form-actions"><button class="btn goldbtn" id="setPrizePoolBtn">Set prize pool</button><button class="btn secondary" id="resetPrizePoolBtn">Use ticket total only</button></div></div>
+        <div class="subpanel" style="margin-top:12px"><h3 style="margin:0 0 10px;font-size:1rem">🎟️ Ticket sales</h3><p class="notice" style="margin-top:0">Current status: <strong id="salesStatusLabel">Loading…</strong></p><div class="form-actions"><button class="btn goldbtn" id="openSalesBtn" type="button">Open sales</button><button class="btn secondary" id="closeSalesBtn" type="button">Close sales</button></div></div>
         <div class="admin-tools">
           <div class="subpanel"><h3 style="margin:0 0 10px;font-size:1rem">📅 Draw schedule</h3><div class="field"><label for="drawDateInput">Scheduled draw date and time (UTC)</label><input id="drawDateInput" type="datetime-local"></div><div class="form-actions"><button class="btn goldbtn" id="scheduleBtn">Save draw time</button><button class="btn secondary" id="clearScheduleBtn">Clear</button></div><p class="notice">Enter the time in UTC (Coordinated Universal Time). When it passes, ticket sales close automatically. I still need to press “Close sales & draw winner” to select the winner.</p></div>
           <div class="subpanel"><h3 style="margin:0 0 10px;font-size:1rem">🔎 Player lookup</h3><div class="field"><label for="lookupUser">Username</label><input id="lookupUser" maxlength="24" placeholder="Enter exact username"></div><div class="form-actions"><button class="btn secondary" id="lookupBtn">Look up player</button></div><div id="lookupResult" class="notice">Look up a player to see their balance, tickets, and purchase history.</div></div>
@@ -130,165 +132,125 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
 </main>
 <footer>Parlamentum Lottery</footer>
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (() => {
- const KEY='parlamentumLotteryDemo_v1';
- const ACCOUNTS_KEY='parlamentumLotteryAccounts_v1';
- const PRICE=50, ADMIN='Orangenine4';
- let accounts={}; let loggedIn=''; let adminUnlocked=false;
- try { accounts=JSON.parse(localStorage.getItem(ACCOUNTS_KEY))||{}; } catch(e) { accounts={}; }
- try { loggedIn=localStorage.getItem('parlamentumLotteryLoggedIn')||''; } catch(e) { loggedIn=''; }
- if(loggedIn && !accounts[loggedIn]) loggedIn='';
- const initial=()=>({wallets:{},tickets:[],nextNumber:1001,closed:false,winner:null,draws:[],schedule:null,audit:[],prizePoolAdjustment:0,withdrawals:[]});
- let state;
- try { state=JSON.parse(localStorage.getItem(KEY)) || initial(); } catch(e){ state=initial(); }
- // Basic shape recovery if browser storage was edited or malformed.
- if(!state.wallets||!Array.isArray(state.tickets)){state=initial();} if(!Array.isArray(state.draws))state.draws=[]; if(!Array.isArray(state.audit))state.audit=[]; if(!Array.isArray(state.withdrawals))state.withdrawals=[]; if(!('schedule' in state))state.schedule=null; if(!Number.isSafeInteger(state.prizePoolAdjustment))state.prizePoolAdjustment=0;
- const $=id=>document.getElementById(id);
- const fmt=n=>Number(n||0).toLocaleString();
- function prizePool(){return Math.max(0,state.tickets.length*PRICE+(Number(state.prizePoolAdjustment)||0));}
- function save(){localStorage.setItem(KEY,JSON.stringify(state));}
- function audit(message){state.audit.unshift({message,date:new Date().toLocaleString('en-US',{timeZone:'UTC'})+' UTC'});state.audit=state.audit.slice(0,30);save();}
- function updateCountdown(){const el=$('countdown');if(!state.schedule){el.textContent='No draw scheduled';$('drawDateLabel').textContent='I haven’t set a draw time yet.';return;}const target=new Date(state.schedule).getTime();if(!Number.isFinite(target)){el.textContent='Schedule unavailable';return;}const diff=target-Date.now();$('drawDateLabel').textContent='Scheduled for '+new Date(target).toLocaleString('en-US',{timeZone:'UTC'})+' UTC';if(diff<=0){el.textContent='Draw time reached';if(!state.closed){state.closed=true;audit('Ticket sales automatically closed at the scheduled draw time.');save();render();}return;}const days=Math.floor(diff/86400000),hours=Math.floor(diff%86400000/3600000),mins=Math.floor(diff%3600000/60000),secs=Math.floor(diff%60000/1000);el.textContent=(days?days+'d ':'')+String(hours).padStart(2,'0')+':'+String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');}
- function toast(msg){const el=$('toast');el.textContent=msg;el.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.style.display='none',2600);}
- function currentName(){return loggedIn || ''; }
- function saveAccounts(){localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(accounts));}
- function updateAccountUI(){ const signedIn=!!loggedIn; $('accountUsername').value=loggedIn||$('accountUsername').value; $('accountUsername').disabled=signedIn; $('accountPassword').disabled=signedIn; $('accountLoginFields').classList.toggle('hidden',signedIn); $('accountIntro').classList.toggle('hidden',signedIn); $('createAccountBtn').classList.toggle('hidden',signedIn); $('loginBtn').classList.toggle('hidden',signedIn); $('logoutBtn').classList.toggle('hidden',!signedIn); $('accountHeading').textContent=signedIn?'👤 Account':'🔐 Account access'; $('accountStatus').textContent=signedIn?('Logged in as '+loggedIn+'. Your tickets and balance are linked to this account.'):'You are not logged in. Create an account or log in to buy tickets.'; $('purchaseLoginNotice').textContent=signedIn?'You are logged in and can buy tickets using this account balance.':'Log in above to buy tickets. Your tickets and balance are linked to your account.'; $('accountPanel').style.padding=signedIn?'12px 18px':''; }
- function wallet(name){if(!Object.prototype.hasOwnProperty.call(state.wallets,name))state.wallets[name]=0;return state.wallets[name];}
- function render(){
-   if(state.schedule && Date.now()>=new Date(state.schedule).getTime() && !state.closed){state.closed=true;state.audit.unshift({message:'Ticket sales automatically closed at the scheduled draw time.',date:new Date().toLocaleString('en-US',{timeZone:'UTC'})+' UTC'});state.audit=state.audit.slice(0,30);}
-   $('pool').textContent=fmt(prizePool());
-   $('adminCurrentPool').textContent=fmt(prizePool());
-   if(document.activeElement!==$('prizePoolInput'))$('prizePoolInput').value=prizePool();
-   $('ticketCount').textContent=fmt(state.tickets.length);
-   $('playerCount').textContent=fmt(new Set(state.tickets.map(t=>t.owner)).size);
-   $('drawStatus').textContent=state.closed?'Closed':'Open';
-   const name=currentName();
-   $('balance').textContent=fmt(name?wallet(name):0);
-   $('topGoldBalance').textContent=fmt(name?wallet(name):0);
-   $('requestWithdrawBtn').disabled=!name;
-   $('withdrawStatus').textContent=name?'Your withdrawal request has been sent to me for review.':'Log in to request a withdrawal.';
-   const myPending=state.withdrawals.filter(w=>w.owner===name);
-   $('myPendingWithdrawals').innerHTML=myPending.length?myPending.map(w=>`<div class="entry"><span>Request #${w.id} · ${fmt(w.amount)} gold · Pending</span><span>Held</span></div>`).join(''):'<div class="empty">No pending withdrawals for your account.</div>';
-   $('pendingWithdrawalsList').innerHTML=state.withdrawals.length?state.withdrawals.map(w=>`<div class="pending-withdrawal"><strong>${esc(w.owner)}</strong> requested <strong>${fmt(w.amount)} gold</strong><div class="hint">Request #${w.id} · ${esc(w.date)} UTC</div><div class="hint">Tell the player: List Raw Copper for ${fmt(w.amount)} gold on the global market.</div><div class="pending-actions"><button class="btn goldbtn" type="button" data-withdraw-complete="${w.id}">Mark completed</button><button class="btn secondary" type="button" data-withdraw-reject="${w.id}">Reject & refund</button></div></div>`).join(''):'<div class="empty">No pending withdrawals.</div>';
-   $('pendingWithdrawalsList').querySelectorAll('[data-withdraw-complete]').forEach(btn=>btn.addEventListener('click',()=>completeWithdrawal(Number(btn.dataset.withdrawComplete))));
-   $('pendingWithdrawalsList').querySelectorAll('[data-withdraw-reject]').forEach(btn=>btn.addEventListener('click',()=>rejectWithdrawal(Number(btn.dataset.withdrawReject))));
-   const mine=name?state.tickets.filter(t=>t.owner===name):[];
-   $('myTickets').innerHTML=mine.length?mine.map(t=>`<span class="ticket">#${t.number}</span>`).join(''):'<div class="empty">'+(name?'No tickets for this account yet.':'Log in to view your tickets.')+'</div>';
-   const past=[...state.draws].reverse();$('pastWinners').innerHTML=past.length?past.map((d,i)=>`<div class="history-item"><div><strong>Winner: ${esc(d.owner)}</strong> · Ticket #${d.number}</div><div class="hint">Prize: ${fmt(d.prize)} gold · ${esc(d.date||'Date unavailable')}</div></div>`).join(''):'<div class="empty">No completed draws yet.</div>';
-   $('auditLog').innerHTML=state.audit.length?state.audit.map(a=>`<div class="entry"><span>${esc(a.message)}</span><span>${esc(a.date)}</span></div>`).join(''):'<div class="empty">No activity recorded yet.</div>';
-   const recent=state.tickets.slice(-8).reverse();
-   $('recentEntries').innerHTML=recent.length?recent.map(t=>`<div class="entry"><span>${esc(t.owner)}</span><span>#${t.number}</span></div>`).join(''):'<div class="empty">No tickets have been purchased yet.</div>';
-   $('winnerDisplay').innerHTML=state.winner?`<div class="winner"><div class="eyebrow">Winning ticket</div><div class="winner-number">#${state.winner.number}</div><strong>${esc(state.winner.owner)}</strong><div class="hint">Prize: ${fmt(state.winner.prize)} gold · ${esc(state.winner.date)}</div></div>`:'<div class="empty">No winner drawn yet.</div>';
-   $('buyBtn').disabled=state.closed || !name;
-   $('quantity').disabled=!name || state.closed;
-   if(state.schedule){const dt=new Date(state.schedule);$('drawDateInput').value=dt.toISOString().slice(0,16);}
-   updateCountdown();save();
- }
- function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
- $('openGoldToolsBtn').addEventListener('click',()=>{
-   $('goldToolsPanel').classList.toggle('hidden');
-   if(!$('goldToolsPanel').classList.contains('hidden')) $('goldToolsPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
- });
- $('depositTabBtn').addEventListener('click',()=>{$('depositTabContent').classList.remove('hidden');$('withdrawTabContent').classList.add('hidden');});
- $('withdrawTabBtn').addEventListener('click',()=>{$('depositTabContent').classList.add('hidden');$('withdrawTabContent').classList.remove('hidden');if(!loggedIn){$('withdrawStatus').textContent='Log in above before requesting a withdrawal.';} });
- $('requestWithdrawBtn').addEventListener('click',()=>{
-   const name=currentName();
-   if(!name){toast('Log in before requesting a withdrawal.');$('accountPanel').scrollIntoView({behavior:'smooth',block:'center'});return;}
-   const amount=Number($('withdrawAmount').value);
-   if(!Number.isSafeInteger(amount)||amount<1){toast('Enter a whole gold amount of at least 1.');return;}
-   const current=wallet(name);
-   if(amount>current){toast('You do not have enough gold for that withdrawal.');return;}
-   const id=state.withdrawals.reduce((max,w)=>Math.max(max,Number(w.id)||0),0)+1;
-   state.wallets[name]=current-amount;
-   state.withdrawals.push({id,owner:name,amount,date:new Date().toLocaleString('en-US',{timeZone:'UTC'}),status:'pending'});
-   audit(`${name} requested a withdrawal of ${amount} gold (request #${id}).`);
-   save();render();$('withdrawAmount').value='';
-   $('withdrawTabContent').classList.remove('hidden');$('depositTabContent').classList.add('hidden');
-   toast(`Withdrawal request submitted. List Raw Copper for ${fmt(amount)} gold on the global market.`);
- });
- function completeWithdrawal(id){
-   if(!authorized())return;
-   const idx=state.withdrawals.findIndex(w=>Number(w.id)===id);if(idx<0){toast('Withdrawal request not found.');return;}
-   const w=state.withdrawals.splice(idx,1)[0];audit(`Withdrawal #${id} for ${w.owner} (${w.amount} gold) marked completed by me.`);save();render();toast(`Withdrawal #${id} marked completed.`);
- }
- function rejectWithdrawal(id){
-   if(!authorized())return;
-   const idx=state.withdrawals.findIndex(w=>Number(w.id)===id);if(idx<0){toast('Withdrawal request not found.');return;}
-   const w=state.withdrawals[idx];if(!accounts[w.owner]){toast('Cannot refund: player account was not found.');return;}
-   state.wallets[w.owner]=(state.wallets[w.owner]||0)+w.amount;state.withdrawals.splice(idx,1);audit(`Withdrawal #${id} for ${w.owner} rejected; ${w.amount} gold refunded.`);save();render();toast(`Withdrawal rejected; ${w.amount} gold refunded to ${w.owner}.`);
- }
- $('createAccountBtn').addEventListener('click',()=>{
-   const name=$('accountUsername').value.trim().slice(0,24), pass=$('accountPassword').value;
-   if(!/^[a-zA-Z0-9_ -]{3,24}$/.test(name)){toast('Username must be 3–24 characters (letters, numbers, spaces, _ or -).');return;}
-   if(pass.length<8){toast('Password must be at least 8 characters.');return;}
-   if(accounts[name]){toast('That username already exists. Try logging in.');return;}
-   accounts[name]=pass;saveAccounts();loggedIn=name;localStorage.setItem('parlamentumLotteryLoggedIn',name);$('accountPassword').value='';updateAccountUI();render();toast('Account created and logged in!');
- });
- $('loginBtn').addEventListener('click',()=>{
-   const name=$('accountUsername').value.trim().slice(0,24), pass=$('accountPassword').value;
-   if(!accounts[name]||accounts[name]!==pass){toast('Username or password is incorrect.');return;}
-   loggedIn=name;localStorage.setItem('parlamentumLotteryLoggedIn',name);$('accountPassword').value='';updateAccountUI();render();toast('Logged in successfully!');
- });
- $('logoutBtn').addEventListener('click',()=>{loggedIn='';localStorage.removeItem('parlamentumLotteryLoggedIn');$('accountUsername').disabled=false;$('accountPassword').disabled=false;$('accountUsername').value='';$('accountPassword').value='';updateAccountUI();render();toast('Logged out.');});
- $('quantity').addEventListener('change',()=>{});
- $('buyBtn').addEventListener('click',()=>{
-   const name=currentName(),qty=Number($('quantity').value);
-   if(!name){toast('Create an account or log in first.');$('accountPanel').scrollIntoView({behavior:'smooth',block:'center'});$('accountUsername').focus();return;}
-   if(!Number.isInteger(qty)||qty<1||qty>10){toast('Choose a valid ticket quantity.');return;}
-   if(state.closed){toast('Ticket sales are closed.');return;}
-   if(wallet(name)<qty*PRICE){toast('Not enough gold.');return;}
-   state.wallets[name]-=qty*PRICE;
-   for(let i=0;i<qty;i++)state.tickets.push({number:state.nextNumber++,owner:name,created:new Date().toISOString()});
-   audit(`${name} purchased ${qty} ticket${qty===1?'':'s'} for ${qty*PRICE} gold.`);save();render();toast(`${qty} ticket${qty===1?'':'s'} purchased! Good luck.`);
- });
- $('refreshBtn').addEventListener('click',()=>{render();toast('Display refreshed.');});
- function authorized(){if(!adminUnlocked){toast('Enter the admin password and unlock my controls first.');return false;}return true;}
- $('unlockAdminBtn').addEventListener('click',()=>{if($('adminCode').value!==ADMIN){adminUnlocked=false;$('adminProtectedControls').classList.add('hidden');$('lockAdminBtn').classList.add('hidden');toast('Incorrect admin password.');return;}adminUnlocked=true;$('adminProtectedControls').classList.remove('hidden');$('lockAdminBtn').classList.remove('hidden');$('unlockAdminBtn').classList.add('hidden');$('adminCode').disabled=true;toast('My controls unlocked.');});
- $('adminCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('unlockAdminBtn').click();});
- $('lockAdminBtn').addEventListener('click',()=>{adminUnlocked=false;$('adminProtectedControls').classList.add('hidden');$('lockAdminBtn').classList.add('hidden');$('unlockAdminBtn').classList.remove('hidden');$('adminCode').disabled=false;$('adminCode').value='';toast('My controls locked.');});
- $('addCreditsBtn').addEventListener('click',()=>{
-   if(!authorized())return;
-   const name=$('creditUser').value.trim().slice(0,24);
-   const amount=Number($('creditAmount').value);
-   if(!name){toast('Enter the exact player username.');return;}
-   if(!Number.isSafeInteger(amount)||amount<1||amount>1000000){toast('Enter a whole gold amount from 1 to 1,000,000.');return;}
-   const current=wallet(name);
-   if(!Number.isSafeInteger(current+amount)){toast('Gold balance would be too large.');return;}
-   if(!accounts[name]){toast('That username has no registered account.');return;} state.wallets[name]=current+amount;audit(`Added ${amount} verified gold to ${name}.`);
-   save();render();toast(`Added ${amount} gold to ${name}.`);
- });
- $('drawBtn').addEventListener('click',()=>{
-   if(!authorized())return;
-   if(state.closed){toast('This draw is already closed.');return;}
-   if(!state.tickets.length){toast('You need at least one ticket to draw a winner.');return;}
-   state.closed=true;
-   const winning=state.tickets[Math.floor(Math.random()*state.tickets.length)];
-   state.winner={number:winning.number,owner:winning.owner,prize:prizePool(),date:new Date().toLocaleString('en-US',{timeZone:'UTC'})+' UTC'};
-   state.draws.push(state.winner);audit(`Draw completed: ${winning.owner} won ticket #${winning.number} (${state.winner.prize} gold).`);state.schedule=null;
-   save();render();toast('Draw complete! Winning ticket #'+winning.number);
- });
- $('reopenBtn').addEventListener('click',()=>{
-   if(!authorized())return;
-   state.tickets=[];state.nextNumber=1001;state.closed=false;state.winner=null;state.schedule=null;state.prizePoolAdjustment=0;
-   audit('I opened a new draw.');save();render();toast('New draw opened. Wallet balances remain.');
- });
- $('resetBtn').addEventListener('click',()=>{
-   if(!authorized())return;
-   if(!confirm('Reset all wallets, tickets, and draw data? This cannot be undone.'))return;
-   state=initial();adminUnlocked=false;$('adminCode').disabled=false;$('adminCode').value='';$('adminProtectedControls').classList.add('hidden');$('lockAdminBtn').classList.add('hidden');$('unlockAdminBtn').classList.remove('hidden');save();render();toast('All data reset.');
- });
- $('setPrizePoolBtn').addEventListener('click',()=>{if(!authorized())return;const desired=Number($('prizePoolInput').value);if(!Number.isSafeInteger(desired)||desired<0||desired>1000000000){toast('Enter a whole prize pool from 0 to 1,000,000,000 gold.');return;}state.prizePoolAdjustment=desired-(state.tickets.length*PRICE);audit(`I set the prize pool to ${desired} gold.`);save();render();toast(`Prize pool set to ${fmt(desired)} gold.`);});
- $('resetPrizePoolBtn').addEventListener('click',()=>{if(!authorized())return;state.prizePoolAdjustment=0;audit('I reset the prize pool to the ticket total.');save();render();toast('Prize pool now matches tickets sold.');});
- $('scheduleBtn').addEventListener('click',()=>{if(!authorized())return;const raw=$('drawDateInput').value;if(!raw){toast('Choose a date and time first.');return;}const target=new Date(raw+'Z').getTime();if(!Number.isFinite(target)||target<=Date.now()){toast('Choose a future UTC date and time.');return;}state.schedule=new Date(target).toISOString();state.closed=false;audit('I scheduled the next draw for '+new Date(target).toLocaleString('en-US',{timeZone:'UTC'})+' UTC.');save();render();toast('UTC draw schedule saved.');});
- $('clearScheduleBtn').addEventListener('click',()=>{if(!authorized())return;state.schedule=null;audit('I cleared the draw schedule.');save();render();toast('Draw schedule cleared.');});
- $('lookupBtn').addEventListener('click',()=>{if(!authorized())return;const name=$('lookupUser').value.trim();if(!name){toast('Enter a username to look up.');return;}const exists=Object.prototype.hasOwnProperty.call(accounts,name);const bal=state.wallets[name]||0;const tickets=state.tickets.filter(t=>t.owner===name);const total=tickets.length;$('lookupResult').innerHTML=`<strong>${esc(name)}</strong><br>Account registered: ${exists?'Yes':'No'}<br>Gold balance: ${fmt(bal)} gold<br>Tickets in current draw: ${total}<br>Ticket numbers: ${tickets.length?tickets.map(t=>'#'+t.number).join(', '):'None'}<br><span class="hint">Current-draw ticket purchases only; old draw tickets are in the draw history.</span>`;});
- // Restore the existing login, if present.
- updateAccountUI();
- // Keep the countdown fresh while this page is open.
- setInterval(updateCountdown,1000);
- // Don't initialize a wallet until a player starts buying, to keep the display generic.
- render();
+  const SUPABASE_URL = 'https://jbpqrjfpbhautjcgxxjj.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_3uJ_1ClpMHe0jFud4lEZ8Q_HXJNmsPy';
+  const PRICE = 50;
+  const $ = id => document.getElementById(id);
+  const fmt = n => Number(n || 0).toLocaleString();
+  const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  let session = null, profile = null, isAdmin = false, settings = null, myTickets = [], history = [];
+  let pendingWithdrawals = [], auditMessages = [];
+  function toast(msg){const el=$('toast');el.textContent=msg;el.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.style.display='none',3200);}
+  function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
+  function currentName(){return profile?.username || '';}
+  function pool(){return Number(settings?.jackpot || 0);}
+  function salesClosed(){return settings?.sales_open === false || (settings?.draw_at && new Date(settings.draw_at).getTime() <= Date.now());}
+  async function refreshData(){
+    const {data:{session:s}} = await supabase.auth.getSession(); session=s;
+    const {data:st,error:se}=await supabase.from('lottery_settings').select('singleton,jackpot,sales_open,draw_at,current_draw_id').eq('singleton',true).maybeSingle();
+    if(!se) settings=st||settings; else console.error(se);
+    profile=null; isAdmin=false; myTickets=[]; pendingWithdrawals=[]; auditMessages=[];
+    if(session){
+      const {data:p,error:pe}=await supabase.from('player_profiles').select('user_id,username,gold').eq('user_id',session.user.id).maybeSingle();
+      if(pe) console.error(pe); profile=p||null;
+      const {data:adm,error:ae}=await supabase.rpc('is_lottery_admin'); if(!ae) isAdmin=!!adm;
+      if(settings?.current_draw_id){
+        const {data:t,error:te}=await supabase.from('lottery_tickets').select('id,ticket_number,draw_id,created_at').eq('user_id',session.user.id).eq('draw_id',settings.current_draw_id).order('ticket_number');
+        if(!te) myTickets=t||[]; else console.error(te);
+      }
+    }
+    const {data:hist,error:he}=await supabase.from('draw_history').select('id,winner_username,prize_gold,drawn_at').order('drawn_at',{ascending:false}).limit(20);
+    if(!he) history=hist||[];
+    if(session && isAdmin){
+      const {data:w,error:we}=await supabase.from('withdrawal_requests').select('id,user_id,amount,status,created_at').eq('status','pending').order('created_at');
+      if(!we){
+        const ids=[...new Set((w||[]).map(x=>x.user_id))];
+        let names={}; if(ids.length){const {data:ps}=await supabase.from('player_profiles').select('user_id,username').in('user_id',ids);(ps||[]).forEach(x=>names[x.user_id]=x.username);}
+        pendingWithdrawals=(w||[]).map(x=>({...x,player_profiles:{username:names[x.user_id]||'Player'}}));
+      } else { console.error(we); pendingWithdrawals=[]; }
+      const {data:d,error:de}=await supabase.from('deposit_requests').select('id,user_id,amount,status,created_at').eq('status','pending').order('created_at');
+      if(!de){
+        const ids=[...new Set((d||[]).map(x=>x.user_id))];
+        let names={}; if(ids.length){const {data:ps}=await supabase.from('player_profiles').select('user_id,username').in('user_id',ids);(ps||[]).forEach(x=>names[x.user_id]=x.username);}
+        auditMessages=(d||[]).map(x=>({kind:'deposit',...x,player_profiles:{username:names[x.user_id]||'Player'}}));
+      } else auditMessages=[];
+    }
+    render();
+  }
+  function render(){
+    const name=currentName(), balance=Number(profile?.gold||0), closed=salesClosed();
+    setText('balance',fmt(balance)); setText('topGoldBalance',fmt(balance)); setText('pool',fmt(pool())); setText('adminCurrentPool',fmt(pool()));
+    setText('ticketCount',fmt(myTickets.length)); setText('playerCount','—'); setText('drawStatus',closed?'Closed':'Open'); setText('salesStatusLabel',settings?.sales_open===false?'Closed':'Open');
+    $('accountLoginFields').classList.toggle('hidden',!!session); $('accountIntro').classList.toggle('hidden',!!session);
+    $('createAccountBtn').classList.toggle('hidden',!!session); $('loginBtn').classList.toggle('hidden',!!session); $('logoutBtn').classList.toggle('hidden',!session);
+    $('accountHeading').textContent=session?'👤 Account':'🔐 Account access';
+    setText('accountStatus',session?`Logged in as ${name || session.user.email}. Your balance and tickets are stored online.`:'Create an account with an email, username, and password, or log in.');
+    setText('purchaseLoginNotice',session?'You are logged in and can buy tickets using this account balance.':'Log in above to buy tickets. Your tickets and balance are stored online.');
+    $('accountUsername').disabled=!!session; $('accountEmail').disabled=!!session; $('accountPassword').disabled=!!session;
+    $('requestWithdrawBtn').disabled=!session;
+    setText('withdrawStatus',session?'Your withdrawal request will be held while I review it.':'Log in to request a withdrawal.');
+    $('buyBtn').disabled=!session || closed; $('quantity').disabled=!session || closed;
+    $('myTickets').innerHTML=myTickets.length?myTickets.map(t=>`<span class="ticket">#${fmt(t.ticket_number)}</span>`).join(''):`<div class="empty">${session?'No tickets for this account in the current draw.':'Log in to view your tickets.'}</div>`;
+    $('recentEntries').innerHTML=myTickets.length?[...myTickets].reverse().slice(0,8).map(t=>`<div class="entry"><span>Your ticket</span><span>#${fmt(t.ticket_number)}</span></div>`).join(''):'<div class="empty">No visible ticket entries yet.</div>';
+    $('pastWinners').innerHTML=history.length?history.map(d=>`<div class="history-item"><div><strong>Winner: ${esc(d.winner_username||'Unknown')}</strong></div><div class="hint">Prize: ${fmt(d.prize_gold)} gold · ${esc(d.drawn_at?new Date(d.drawn_at).toLocaleString():'Date unavailable')}</div></div>`).join(''):'<div class="empty">No completed draws yet.</div>';
+    $('winnerDisplay').innerHTML=history.length?`<div class="winner"><div class="eyebrow">Most recent winner</div><strong>${esc(history[0].winner_username||'Unknown')}</strong><div class="hint">Prize: ${fmt(history[0].prize_gold)} gold</div></div>`:'<div class="empty">No winner drawn yet.</div>';
+    $('countdown').textContent=settings?.draw_at? (new Date(settings.draw_at).getTime()<=Date.now()?'Draw time reached':new Date(settings.draw_at).toLocaleString()):'No draw scheduled';
+    $('drawDateLabel').textContent=settings?.draw_at?'Scheduled for '+new Date(settings.draw_at).toLocaleString():'I haven’t set a draw time yet.';
+    $('adminProtectedControls').classList.toggle('hidden',!isAdmin); $('unlockAdminBtn').classList.toggle('hidden',isAdmin); $('lockAdminBtn').classList.toggle('hidden',!isAdmin);
+    $('adminCode').closest('.field').classList.add('hidden');
+    if(isAdmin){
+      $('pendingWithdrawalsList').innerHTML=pendingWithdrawals.length?pendingWithdrawals.map(w=>`<div class="pending-withdrawal"><strong>${esc(w.player_profiles?.username||'Player')}</strong> requested <strong>${fmt(w.amount)} gold</strong><div class="hint">Request #${w.id} · ${esc(new Date(w.created_at).toLocaleString())}</div><div class="hint">Tell the player: List Raw Copper for ${fmt(w.amount)} gold on the global market.</div><div class="pending-actions"><button class="btn goldbtn" data-withdraw="${w.id}" data-approve="true">Mark completed</button><button class="btn secondary" data-withdraw="${w.id}" data-approve="false">Reject & refund</button></div></div>`).join(''):'<div class="empty">No pending withdrawals. If requests exist but are not shown, run the admin read-policy SQL I provide separately.</div>';
+      $('pendingWithdrawalsList').querySelectorAll('[data-withdraw]').forEach(b=>b.addEventListener('click',()=>processWithdrawal(Number(b.dataset.withdraw),b.dataset.approve==='true')));
+      $('auditLog').innerHTML=auditMessages.length?auditMessages.map(d=>`<div class="entry"><span>Deposit request #${d.id} · ${esc(d.player_profiles?.username||'Player')} · ${fmt(d.amount)} gold</span><span><button class="btn goldbtn" data-deposit="${d.id}" data-approve="true">Approve</button> <button class="btn secondary" data-deposit="${d.id}" data-approve="false">Reject</button></span></div>`).join(''):'<div class="empty">No pending deposits.</div>';
+      $('auditLog').querySelectorAll('[data-deposit]').forEach(b=>b.addEventListener('click',()=>processDeposit(Number(b.dataset.deposit),b.dataset.approve==='true')));
+    } else { $('pendingWithdrawalsList').innerHTML='<div class="empty">Organizer sign-in required.</div>'; $('auditLog').innerHTML='<div class="empty">Organizer sign-in required.</div>'; }
+    $('drawBtn').disabled=true; $('reopenBtn').disabled=true; $('resetBtn').disabled=true; $('scheduleBtn').disabled=true; $('clearScheduleBtn').disabled=true; $('openSalesBtn').disabled=!isAdmin; $('closeSalesBtn').disabled=!isAdmin;
+  }
+  async function showError(error, fallback='Something went wrong.'){console.error(error);toast(error?.message||fallback);}
+  async function createAccount(){
+    const username=$('accountUsername').value.trim(), email=$('accountEmail').value.trim(), password=$('accountPassword').value;
+    if(!/^[A-Za-z0-9_ -]{3,24}$/.test(username)){toast('Username must be 3–24 characters (letters, numbers, spaces, _ or -).');return;}
+    if(!email || !email.includes('@')){toast('Enter a valid email address.');return;} if(password.length<8){toast('Password must be at least 8 characters.');return;}
+    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username}}});
+    if(error){await showError(error);return;}
+    if(data.session){toast('Account created! You are logged in.');}else{toast('Account created. Check your email to confirm it, then log in.');}
+    $('accountPassword').value=''; await refreshData();
+  }
+  async function login(){
+    const email=$('accountEmail').value.trim(), password=$('accountPassword').value;
+    if(!email || !password){toast('Enter your email and password.');return;}
+    const {error}=await supabase.auth.signInWithPassword({email,password}); if(error){await showError(error,'Could not log in.');return;}
+    $('accountPassword').value=''; await refreshData(); toast('Logged in successfully.');
+  }
+  async function processWithdrawal(id,approve){const {error}=await supabase.rpc('admin_process_withdrawal',{p_request_id:id,p_approve:approve});if(error){await showError(error);return;}toast(approve?'Withdrawal marked completed.':'Withdrawal rejected and refunded.');await refreshData();}
+  async function processDeposit(id,approve){const {error}=await supabase.rpc('admin_process_deposit',{p_request_id:id,p_approve:approve});if(error){await showError(error);return;}toast(approve?'Deposit approved and gold added.':'Deposit rejected.');await refreshData();}
+  $('openGoldToolsBtn').addEventListener('click',()=>{$('goldToolsPanel').classList.toggle('hidden');if(!$('goldToolsPanel').classList.contains('hidden'))$('goldToolsPanel').scrollIntoView({behavior:'smooth',block:'nearest'});});
+  $('depositTabBtn').addEventListener('click',()=>{$('depositTabContent').classList.remove('hidden');$('withdrawTabContent').classList.add('hidden');});
+  $('withdrawTabBtn').addEventListener('click',()=>{$('depositTabContent').classList.add('hidden');$('withdrawTabContent').classList.remove('hidden');});
+  $('createAccountBtn').addEventListener('click',createAccount); $('loginBtn').addEventListener('click',login);
+  $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();profile=null;session=null;isAdmin=false;await refreshData();toast('Logged out.');});
+  $('requestWithdrawBtn').addEventListener('click',async()=>{if(!session){toast('Log in before requesting a withdrawal.');return;}const amount=Number($('withdrawAmount').value);if(!Number.isSafeInteger(amount)||amount<1){toast('Enter a whole gold amount of at least 1.');return;}const {error}=await supabase.rpc('request_lottery_withdrawal',{p_amount:amount});if(error){await showError(error);return;}$('withdrawAmount').value='';toast(`Withdrawal requested. List Raw Copper for ${fmt(amount)} gold on the global market.`);await refreshData();});
+  $('buyBtn').addEventListener('click',async()=>{if(!session){toast('Create an account or log in first.');return;}const quantity=Number($('quantity').value);const {data,error}=await supabase.rpc('buy_lottery_tickets',{p_quantity:quantity});if(error){await showError(error);return;}toast(`Purchased ${Array.isArray(data)?data.length:quantity} ticket(s)! Good luck.`);await refreshData();});
+  $('refreshBtn').addEventListener('click',async()=>{await refreshData();toast('Display refreshed.');});
+  $('unlockAdminBtn').addEventListener('click',async()=>{await refreshData();if(!isAdmin)toast('This signed-in account is not registered as an organizer in Supabase.');else toast('My organizer controls are unlocked.');});
+  $('lockAdminBtn').addEventListener('click',()=>{isAdmin=false;render();toast('Organizer controls locked.');});
+  $('addCreditsBtn').addEventListener('click',async()=>{if(!isAdmin){toast('Sign in with my organizer account first.');return;}const username=$('creditUser').value.trim(),amount=Number($('creditAmount').value);if(!username||!Number.isSafeInteger(amount)||amount<1||amount>1000000){toast('Enter a username and a whole amount from 1 to 1,000,000.');return;}const {error}=await supabase.rpc('admin_credit_gold',{p_username:username,p_amount:amount});if(error){await showError(error);return;}toast(`Added ${fmt(amount)} gold to ${username}.`);await refreshData();});
+  $('setPrizePoolBtn').addEventListener('click',async()=>{if(!isAdmin)return;const amount=Number($('prizePoolInput').value);if(!Number.isSafeInteger(amount)||amount<0||amount>1000000000){toast('Enter a valid whole jackpot amount.');return;}const {error}=await supabase.rpc('admin_set_jackpot',{p_amount:amount});if(error){await showError(error);return;}toast('Jackpot updated.');await refreshData();});
+  $('resetPrizePoolBtn').addEventListener('click',async()=>{if(!isAdmin)return;toast('Use Set prize pool to enter the desired jackpot amount.');});
+  async function setSalesOpen(open){if(!isAdmin){toast('Organizer sign-in required.');return;}const {error}=await supabase.rpc('admin_set_sales_open',{p_open:open});if(error){await showError(error);return;}toast(open?'Ticket sales opened.':'Ticket sales closed.');await refreshData();}
+  $('openSalesBtn').addEventListener('click',()=>setSalesOpen(true)); $('closeSalesBtn').addEventListener('click',()=>setSalesOpen(false));
+  $('scheduleBtn').addEventListener('click',()=>toast('Draw scheduling needs the secure organizer scheduling function to be added in Supabase first.'));
+  $('clearScheduleBtn').addEventListener('click',()=>toast('Draw scheduling needs the secure organizer scheduling function to be added in Supabase first.'));
+  $('drawBtn').addEventListener('click',()=>toast('Winner drawing needs the secure draw function to be added in Supabase first.'));
+  $('reopenBtn').addEventListener('click',()=>toast('Opening a new draw needs the secure organizer draw function to be added in Supabase first.'));
+  $('resetBtn').addEventListener('click',()=>toast('Global reset is disabled to protect shared lottery data.'));
+  $('lookupBtn').addEventListener('click',()=>toast('Player lookup needs a secure organizer lookup function to be added in Supabase first.'));
+  supabase.auth.onAuthStateChange((_event,newSession)=>{session=newSession;setTimeout(()=>refreshData(),0);});
+  refreshData().catch(e=>showError(e,'Could not connect to Supabase. Check the project URL and publishable key.'));
 })();
 </script>
 </body>
