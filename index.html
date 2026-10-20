@@ -7,12 +7,12 @@
 <style>
 :root{--bg:#0d0d10;--panel:#17171d;--panel2:#202027;--red:#e04444;--red2:#9f252b;--gold:#f5c451;--text:#f6f3ef;--muted:#aaa5a2;--line:#333139;--green:#62d49a}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#321417 0%,var(--bg) 46%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;min-height:100vh}
-header{padding:24px 18px 10px;text-align:center}.brand{display:inline-flex;align-items:center;gap:9px;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:800}.logo{display:inline-grid;place-items:center;width:34px;height:34px;border:1px solid #a43a3a;border-radius:10px;background:#2a1114;font-size:19px}
+header{padding:24px 18px 10px;text-align:center;position:relative;padding-top:78px}.top-account{position:absolute;top:14px;right:max(16px,calc((100vw - 1040px)/2));display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 32px)}.top-gold{display:inline-flex;align-items:center;gap:7px;background:#14251d;border:1px solid #28583f;border-radius:999px;padding:9px 12px;color:#b7f1d0;font-weight:800;font-size:.9rem}.top-gold strong{color:var(--green)}.account-tools{margin:0 auto 16px;max-width:1040px;padding:0 16px}.account-tool-panel{background:#17171d;border:1px solid #333139;border-radius:14px;padding:16px}.account-tabs{display:flex;gap:8px;margin-bottom:12px}.account-tabs .btn{flex:1}.withdraw-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.withdraw-row .btn{white-space:nowrap}.pending-withdrawal{padding:12px;border:1px solid #4b3d27;border-radius:10px;background:#19150f;margin-top:8px}.pending-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.pending-actions .btn{padding:9px 11px;font-size:.84rem}.brand{display:inline-flex;align-items:center;gap:9px;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:800}.logo{display:inline-grid;place-items:center;width:34px;height:34px;border:1px solid #a43a3a;border-radius:10px;background:#2a1114;font-size:19px}
 h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-spacing:-.045em}h1 span{color:var(--red)}.subtitle{color:var(--muted);margin:0 auto;max-width:570px}
 .wrap{max-width:1040px;margin:0 auto;padding:20px 16px 42px}.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin:18px 0}.panel{background:linear-gradient(145deg,rgba(31,30,38,.96),rgba(19,19,24,.97));border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 12px 35px #0003}
 .jackpot{position:relative;overflow:hidden;border-color:#68472a;background:radial-gradient(ellipse at 90% 5%,#59351c 0%,transparent 48%),linear-gradient(145deg,#241a19,#151419)}.eyebrow{font-size:.75rem;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);font-weight:800}.prize{font-size:clamp(2.5rem,7vw,4rem);font-weight:900;color:var(--gold);letter-spacing:-.05em;margin:8px 0}.prize small{font-size:.9rem;letter-spacing:0;color:#d8b96d}.hint{color:var(--muted);font-size:.9rem}.statrow{display:flex;gap:22px;margin-top:22px}.stat strong{display:block;font-size:1.35rem}.stat span{color:var(--muted);font-size:.8rem}.gold-icon{font-size:2rem;float:right}
 .section-title{font-size:1.15rem;margin:0 0 16px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:7px}.field.full{grid-column:1/-1}label{font-size:.84rem;color:#d9d4d1;font-weight:650}input,select{width:100%;background:#101014;border:1px solid #45414b;border-radius:10px;padding:12px 13px;color:var(--text);font:inherit;outline:none}input:focus,select:focus{border-color:var(--red)}.btn{border:0;border-radius:10px;padding:13px 16px;font:inherit;font-weight:800;cursor:pointer;transition:transform .12s,filter .12s}.btn:hover{filter:brightness(1.08)}.btn:active{transform:scale(.99)}.primary{background:linear-gradient(135deg,#ef5555,#b82b34);color:white}.secondary{background:#292830;color:var(--text);border:1px solid #48444e}.goldbtn{background:linear-gradient(135deg,#ffdf7d,#d89b28);color:#231808}.btn:disabled{opacity:.4;cursor:not-allowed}.form-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}.notice{font-size:.8rem;color:var(--muted);line-height:1.5;margin:14px 0 0}.balance-pill{display:inline-flex;gap:8px;align-items:center;background:#14251d;border:1px solid #28583f;border-radius:999px;padding:8px 12px;font-size:.86rem;color:#b7f1d0;margin-bottom:18px}.balance-pill strong{color:var(--green)}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.tickets{display:flex;flex-wrap:wrap;gap:8px}.ticket{background:linear-gradient(145deg,#2c1b1d,#17161b);border:1px dashed #aa5154;border-radius:9px;padding:9px 11px;font-weight:800;color:#ffcd78}.empty{color:var(--muted);font-size:.9rem;padding:10px 0}.draw-box{border-color:#59462a}.winner{border:1px solid #6d592b;background:#211d13;border-radius:12px;padding:16px;margin-top:14px}.winner-number{font-size:2.1rem;font-weight:900;color:var(--gold)}.hidden{display:none!important}.list{display:flex;flex-direction:column;gap:8px}.entry{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 12px;background:#111116;border:1px solid #302e36;border-radius:10px;font-size:.88rem}.entry span:last-child{color:var(--gold);font-weight:750}.admin{margin-top:16px;border-style:dashed}.admin summary{cursor:pointer;color:#e7c77c;font-weight:750}.admin-content{padding-top:16px}.history-list{display:flex;flex-direction:column;gap:10px}.history-item{padding:13px 14px;border:1px solid #3a3428;border-radius:12px;background:linear-gradient(120deg,#211c15,#131318)}.history-item strong{color:var(--gold)}.countdown{font-size:1.25rem;font-weight:850;color:var(--gold);margin-top:8px}.admin-tools{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.subpanel{background:#111116;border:1px solid #302e36;border-radius:12px;padding:14px}.audit-list{max-height:240px;overflow:auto}.warning{background:#2b2115;border:1px solid #735329;border-radius:10px;padding:12px;color:#e8cf9b;font-size:.82rem;line-height:1.5;margin-top:16px}footer{text-align:center;color:#77727b;font-size:.78rem;padding:0 16px 28px}#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#f6f3ef;color:#171419;padding:12px 16px;border-radius:12px;font-weight:750;box-shadow:0 10px 35px #0007;display:none;z-index:5;max-width:calc(100% - 24px)}
-@media(max-width:700px){.hero,.two-col,.admin-tools{grid-template-columns:1fr}.panel{padding:18px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.statrow{gap:18px}}
+@media(max-width:700px){header{padding-top:104px}.top-account{left:12px;right:12px;justify-content:center}.hero,.two-col,.admin-tools{grid-template-columns:1fr}.panel{padding:18px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.statrow{gap:18px}.account-tabs{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -21,6 +21,33 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
   <h1>THE <span>LOTTERY</span></h1>
   <p class="subtitle">Your ticket. Your chance. One winning number.</p>
 </header>
+<div class="top-account" aria-label="Your gold balance">
+  <div class="top-gold">✦ Your gold: <strong id="topGoldBalance">0</strong></div>
+  <button class="btn goldbtn" id="openGoldToolsBtn" type="button">Deposit / Withdraw</button>
+</div>
+<section class="account-tools hidden" id="goldToolsPanel">
+  <div class="account-tool-panel">
+    <div class="account-tabs">
+      <button class="btn secondary" id="depositTabBtn" type="button">How to deposit</button>
+      <button class="btn secondary" id="withdrawTabBtn" type="button">Withdraw</button>
+    </div>
+    <div id="depositTabContent">
+      <h2 class="section-title">How to deposit gold</h2>
+      <p class="notice" style="margin-top:0">Go to the global market and buy Raw Copper for 1.05 gold from Bibo4414 , the amount you buy is the amount of gold you will be credited.</p>
+      <p class="notice">After your purchase is verified, the organizer will add the matching gold to your lottery balance.</p>
+    </div>
+    <div id="withdrawTabContent" class="hidden">
+      <h2 class="section-title">Withdraw gold</h2>
+      <p class="notice" style="margin-top:0">Enter the whole amount of gold you want to withdraw. The amount will be held while your request is pending.</p>
+      <div class="withdraw-row" style="margin-top:12px">
+        <div class="field" style="flex:1;min-width:180px"><label for="withdrawAmount">Gold amount to withdraw</label><input id="withdrawAmount" type="number" min="1" step="1" placeholder="Enter amount"></div>
+        <button class="btn goldbtn" id="requestWithdrawBtn" type="button">Request withdrawal</button>
+      </div>
+      <p class="notice" id="withdrawStatus">Log in to request a withdrawal.</p>
+      <div id="myPendingWithdrawals" class="list" style="margin-top:10px"></div>
+    </div>
+  </div>
+</section>
 <main class="wrap">
   <section class="hero">
     <div class="panel jackpot">
@@ -93,6 +120,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
           <div class="subpanel"><h3 style="margin:0 0 10px;font-size:1rem">📅 Draw schedule</h3><div class="field"><label for="drawDateInput">Scheduled draw date and time (UTC)</label><input id="drawDateInput" type="datetime-local"></div><div class="form-actions"><button class="btn goldbtn" id="scheduleBtn">Save draw time</button><button class="btn secondary" id="clearScheduleBtn">Clear</button></div><p class="notice">Enter the time in UTC (Coordinated Universal Time). When it passes, ticket sales close automatically. The organizer still needs to press “Close sales & draw winner” to select the winner.</p></div>
           <div class="subpanel"><h3 style="margin:0 0 10px;font-size:1rem">🔎 Player lookup</h3><div class="field"><label for="lookupUser">Username</label><input id="lookupUser" maxlength="24" placeholder="Enter exact username"></div><div class="form-actions"><button class="btn secondary" id="lookupBtn">Look up player</button></div><div id="lookupResult" class="notice">Look up a player to see their balance, tickets, and purchase history.</div></div>
         </div>
+        <div class="subpanel" style="margin-top:12px"><h3 style="margin:0 0 10px;font-size:1rem">📤 Withdrawals pending</h3><p class="notice" style="margin-top:0">Review requested withdrawals. Completing a request removes it from this pending list; rejecting it refunds the reserved gold to the player.</p><div id="pendingWithdrawalsList" class="list"><div class="empty">No pending withdrawals.</div></div></div>
         <div class="subpanel" style="margin-top:12px"><h3 style="margin:0 0 10px;font-size:1rem">🧾 Organizer activity log</h3><div id="auditLog" class="list audit-list"><div class="empty">No activity recorded yet.</div></div></div>
         <div class="form-actions"><button class="btn goldbtn" id="drawBtn">Close sales & draw winner</button><button class="btn secondary" id="reopenBtn">Reopen next draw</button><button class="btn secondary" id="resetBtn">Reset all data</button></div>
         </div>
@@ -111,11 +139,11 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
  try { accounts=JSON.parse(localStorage.getItem(ACCOUNTS_KEY))||{}; } catch(e) { accounts={}; }
  try { loggedIn=localStorage.getItem('parlamentumLotteryLoggedIn')||''; } catch(e) { loggedIn=''; }
  if(loggedIn && !accounts[loggedIn]) loggedIn='';
- const initial=()=>({wallets:{},tickets:[],nextNumber:1001,closed:false,winner:null,draws:[],schedule:null,audit:[],prizePoolAdjustment:0});
+ const initial=()=>({wallets:{},tickets:[],nextNumber:1001,closed:false,winner:null,draws:[],schedule:null,audit:[],prizePoolAdjustment:0,withdrawals:[]});
  let state;
  try { state=JSON.parse(localStorage.getItem(KEY)) || initial(); } catch(e){ state=initial(); }
  // Basic shape recovery if browser storage was edited or malformed.
- if(!state.wallets||!Array.isArray(state.tickets)){state=initial();} if(!Array.isArray(state.draws))state.draws=[]; if(!Array.isArray(state.audit))state.audit=[]; if(!('schedule' in state))state.schedule=null; if(!Number.isSafeInteger(state.prizePoolAdjustment))state.prizePoolAdjustment=0;
+ if(!state.wallets||!Array.isArray(state.tickets)){state=initial();} if(!Array.isArray(state.draws))state.draws=[]; if(!Array.isArray(state.audit))state.audit=[]; if(!Array.isArray(state.withdrawals))state.withdrawals=[]; if(!('schedule' in state))state.schedule=null; if(!Number.isSafeInteger(state.prizePoolAdjustment))state.prizePoolAdjustment=0;
  const $=id=>document.getElementById(id);
  const fmt=n=>Number(n||0).toLocaleString();
  function prizePool(){return Math.max(0,state.tickets.length*PRICE+(Number(state.prizePoolAdjustment)||0));}
@@ -137,6 +165,14 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
    $('drawStatus').textContent=state.closed?'Closed':'Open';
    const name=currentName();
    $('balance').textContent=fmt(name?wallet(name):0);
+   $('topGoldBalance').textContent=fmt(name?wallet(name):0);
+   $('requestWithdrawBtn').disabled=!name;
+   $('withdrawStatus').textContent=name?'Withdrawals are submitted for organizer review.':'Log in to request a withdrawal.';
+   const myPending=state.withdrawals.filter(w=>w.owner===name);
+   $('myPendingWithdrawals').innerHTML=myPending.length?myPending.map(w=>`<div class="entry"><span>Request #${w.id} · ${fmt(w.amount)} gold · Pending</span><span>Held</span></div>`).join(''):'<div class="empty">No pending withdrawals for your account.</div>';
+   $('pendingWithdrawalsList').innerHTML=state.withdrawals.length?state.withdrawals.map(w=>`<div class="pending-withdrawal"><strong>${esc(w.owner)}</strong> requested <strong>${fmt(w.amount)} gold</strong><div class="hint">Request #${w.id} · ${esc(w.date)} UTC</div><div class="hint">Tell the player: List Raw Copper for ${fmt(w.amount)} gold on the global market.</div><div class="pending-actions"><button class="btn goldbtn" type="button" data-withdraw-complete="${w.id}">Mark completed</button><button class="btn secondary" type="button" data-withdraw-reject="${w.id}">Reject & refund</button></div></div>`).join(''):'<div class="empty">No pending withdrawals.</div>';
+   $('pendingWithdrawalsList').querySelectorAll('[data-withdraw-complete]').forEach(btn=>btn.addEventListener('click',()=>completeWithdrawal(Number(btn.dataset.withdrawComplete))));
+   $('pendingWithdrawalsList').querySelectorAll('[data-withdraw-reject]').forEach(btn=>btn.addEventListener('click',()=>rejectWithdrawal(Number(btn.dataset.withdrawReject))));
    const mine=name?state.tickets.filter(t=>t.owner===name):[];
    $('myTickets').innerHTML=mine.length?mine.map(t=>`<span class="ticket">#${t.number}</span>`).join(''):'<div class="empty">'+(name?'No tickets for this account yet.':'Log in to view your tickets.')+'</div>';
    const past=[...state.draws].reverse();$('pastWinners').innerHTML=past.length?past.map((d,i)=>`<div class="history-item"><div><strong>Winner: ${esc(d.owner)}</strong> · Ticket #${d.number}</div><div class="hint">Prize: ${fmt(d.prize)} gold · ${esc(d.date||'Date unavailable')}</div></div>`).join(''):'<div class="empty">No completed draws yet.</div>';
@@ -150,6 +186,38 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
    updateCountdown();save();
  }
  function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+ $('openGoldToolsBtn').addEventListener('click',()=>{
+   $('goldToolsPanel').classList.toggle('hidden');
+   if(!$('goldToolsPanel').classList.contains('hidden')) $('goldToolsPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+ });
+ $('depositTabBtn').addEventListener('click',()=>{$('depositTabContent').classList.remove('hidden');$('withdrawTabContent').classList.add('hidden');});
+ $('withdrawTabBtn').addEventListener('click',()=>{$('depositTabContent').classList.add('hidden');$('withdrawTabContent').classList.remove('hidden');if(!loggedIn){$('withdrawStatus').textContent='Log in above before requesting a withdrawal.';} });
+ $('requestWithdrawBtn').addEventListener('click',()=>{
+   const name=currentName();
+   if(!name){toast('Log in before requesting a withdrawal.');$('accountPanel').scrollIntoView({behavior:'smooth',block:'center'});return;}
+   const amount=Number($('withdrawAmount').value);
+   if(!Number.isSafeInteger(amount)||amount<1){toast('Enter a whole gold amount of at least 1.');return;}
+   const current=wallet(name);
+   if(amount>current){toast('You do not have enough gold for that withdrawal.');return;}
+   const id=state.withdrawals.reduce((max,w)=>Math.max(max,Number(w.id)||0),0)+1;
+   state.wallets[name]=current-amount;
+   state.withdrawals.push({id,owner:name,amount,date:new Date().toLocaleString('en-US',{timeZone:'UTC'}),status:'pending'});
+   audit(`${name} requested a withdrawal of ${amount} gold (request #${id}).`);
+   save();render();$('withdrawAmount').value='';
+   $('withdrawTabContent').classList.remove('hidden');$('depositTabContent').classList.add('hidden');
+   toast(`Withdrawal request submitted. List Raw Copper for ${fmt(amount)} gold on the global market.`);
+ });
+ function completeWithdrawal(id){
+   if(!authorized())return;
+   const idx=state.withdrawals.findIndex(w=>Number(w.id)===id);if(idx<0){toast('Withdrawal request not found.');return;}
+   const w=state.withdrawals.splice(idx,1)[0];audit(`Withdrawal #${id} for ${w.owner} (${w.amount} gold) marked completed by organizer.`);save();render();toast(`Withdrawal #${id} marked completed.`);
+ }
+ function rejectWithdrawal(id){
+   if(!authorized())return;
+   const idx=state.withdrawals.findIndex(w=>Number(w.id)===id);if(idx<0){toast('Withdrawal request not found.');return;}
+   const w=state.withdrawals[idx];if(!accounts[w.owner]){toast('Cannot refund: player account was not found.');return;}
+   state.wallets[w.owner]=(state.wallets[w.owner]||0)+w.amount;state.withdrawals.splice(idx,1);audit(`Withdrawal #${id} for ${w.owner} rejected; ${w.amount} gold refunded.`);save();render();toast(`Withdrawal rejected; ${w.amount} gold refunded to ${w.owner}.`);
+ }
  $('createAccountBtn').addEventListener('click',()=>{
    const name=$('accountUsername').value.trim().slice(0,24), pass=$('accountPassword').value;
    if(!/^[a-zA-Z0-9_ -]{3,24}$/.test(name)){toast('Username must be 3–24 characters (letters, numbers, spaces, _ or -).');return;}
