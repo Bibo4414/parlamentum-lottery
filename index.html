@@ -53,7 +53,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     <div class="menu-heading"><div class="eyebrow">CHOOSE YOUR GAME</div><h2>Pick your <span style="color:var(--gold)">jackpot</span></h2><p class="subtitle">Two lotteries. Two ticket prices. One shared gold balance.</p></div>
     <div class="lottery-cards">
       <article class="lottery-card small-jackpot"><div class="card-top"><span class="card-tag">QUICK DRAW</span><span class="card-symbol">✦</span></div><div class="card-label">THE MINI LOTTERY</div><div class="card-jackpot"><span id="menuJackpot100">100</span> <small>gold</small></div><p>Try your luck with a smaller ticket price.</p><div class="card-bottom"><span>Ticket price <strong>10 gold</strong></span><button class="btn goldbtn" data-lottery="mini">Play Mini</button></div></article>
-      <article class="lottery-card grand-jackpot"><div class="card-top"><span class="card-tag">GRAND PRIZE</span><span class="card-symbol">♛</span></div><div class="card-label">THE GRAND LOTTERY</div><div class="card-jackpot"><span id="menuJackpot500">500</span> <small>gold</small></div><p>Go for the bigger jackpot with a 30-gold ticket.</p><div class="card-bottom"><span>Ticket price <strong>30 gold</strong></span><button class="btn primary" data-lottery="grand">Play Grand</button></div></article>
+      <article class="lottery-card grand-jackpot"><div class="card-top"><span class="card-tag">GRAND PRIZE</span><span class="card-symbol">♛</span></div><div class="card-label">THE GRAND LOTTERY</div><div class="card-jackpot"><span id="menuJackpot500">500</span> <small>gold</small></div><p>Go for the bigger jackpot with a 50-gold ticket.</p><div class="card-bottom"><span>Ticket price <strong>50 gold</strong></span><button class="btn primary" data-lottery="grand">Play Grand</button></div></article>
     </div>
     <p class="menu-footnote">Your account and gold balance are shared between both lotteries. Tickets and jackpots stay separate.</p>
   </section>
@@ -78,7 +78,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
         <div class="entry"><span>03 · Get unique ticket numbers</span><span>Lucky</span></div>
         <div class="entry"><span>04 · Watch the scheduled draw</span><span>Win!</span></div>
       </div>
-      <p class="notice">Parlamentum exchange: 1 Raw Copper purchased for 1 gold adds 1 gold to your lottery balance after I verify the purchase. Ticket price depends on the lottery you choose: Mini costs 10 gold per ticket and Grand costs 30 gold per ticket.</p>
+      <p class="notice">Parlamentum exchange: 1 Raw Copper purchased for 1 gold adds 1 gold to your lottery balance after I verify the purchase. Ticket price depends on the lottery you choose: Mini costs 10 gold per ticket and Grand costs 50 gold per ticket.</p>
     </div>
   </section>
   <section class="panel" id="accountPanel">
@@ -148,7 +148,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
 (() => {
   const SUPABASE_URL = 'https://jbpqrjfpbhautjcgxxjj.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_3uJ_1ClpMHe0jFud4lEZ8Q_HXJNmsPy';
-  const LOTTERIES = { mini: {name:'Mini Lottery', jackpot:100, ticketPrice:10}, grand: {name:'Grand Lottery', jackpot:500, ticketPrice:30} };
+  const LOTTERIES = { mini: {name:'Mini Lottery', jackpot:100, ticketPrice:10}, grand: {name:'Grand Lottery', jackpot:500, ticketPrice:50} };
   let currentLottery = null;
   const $ = id => document.getElementById(id);
   const fmt = n => Number(n || 0).toLocaleString();
