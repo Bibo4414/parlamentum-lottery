@@ -98,6 +98,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     <p class="notice" id="purchaseLoginNotice" style="margin-top:0">Log in above to buy tickets. Your tickets and balance are linked to your account.</p>
     <div class="form-grid">
       <div class="field full"><label for="quantity">Number of tickets</label><select id="quantity"><option value="1">1 ticket</option><option value="2">2 tickets</option><option value="3">3 tickets</option><option value="5">5 tickets</option><option value="10">10 tickets</option></select></div>
+      <div class="field full"><div class="subpanel"><strong>Purchase total</strong><p class="notice" id="purchaseTotalEstimate" style="margin:6px 0 0">Choose a lottery to see the total, including the 10% organizer fee.</p></div></div>
     </div>
     <div class="form-actions"><button class="btn primary" id="buyBtn">Buy tickets</button><button class="btn secondary" id="refreshBtn">Refresh display</button></div>
     <p class="notice">Gold is added manually after Raw Copper purchases are verified. The ticket price is shown above and depends on the selected lottery.</p>
@@ -182,6 +183,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     const [gameResult,menuResult,historyResult,profileResult,adminResult] = await Promise.all([
       selectedGamePromise, menuGamesPromise, historyPromise, profilePromise, adminPromise
     ]);
+    if(adminResult.data===true){const feeResult=await supabase.rpc('admin_get_fee_earnings');if(!feeResult.error)setText('adminFeeEarnings',fmt(feeResult.data||0));}
     if(!gameResult.error) settings=gameResult.data||null; else { settings=null; console.error(gameResult.error); }
     if(menuResult.data){
       menuResult.data.forEach(g=>{if(g.id==='mini'){menuJackpotMini=Number(g.jackpot);menuPriceMini=Number(g.ticket_price)||10;}if(g.id==='grand'){menuJackpotGrand=Number(g.jackpot);menuPriceGrand=Number(g.ticket_price)||50;}});
@@ -228,6 +230,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     setText('selectedLotteryName',currentLottery ? LOTTERIES[currentLottery].name : 'Choose a lottery'); setText('selectedTicketPrice',currentLottery ? fmt(activeTicketPrice)+' gold / ticket' : ''); setText('howTicketPrice',currentLottery ? fmt(activeTicketPrice)+' gold' : 'Choose a lottery');
     setText('menuJackpot100',fmt(menuJackpotMini)); setText('menuJackpot500',fmt(menuJackpotGrand)); setText('menuPriceMini',fmt(menuPriceMini)); setText('menuPriceGrand',fmt(menuPriceGrand)); setText('adminCurrentTicketPrice',currentLottery?fmt(activeTicketPrice):'—');
     setText('balance',fmt(balance)); setText('topGoldBalance',fmt(balance)); setText('pool',fmt(pool())); setText('adminCurrentPool',fmt(pool()));
+    const qty=Number($('quantity')?.value||1), baseTotal=activeTicketPrice*qty, fee=Math.ceil(baseTotal*0.10); setText('purchaseTotalEstimate',currentLottery?`${fmt(baseTotal)} gold tickets + ${fmt(fee)} gold 10% fee = ${fmt(baseTotal+fee)} gold total.`:'Choose Mini or Grand to see the total including the 10% fee.');
     setText('menuJackpot100',fmt(currentLottery==='mini' ? pool() : menuJackpotMini)); setText('menuJackpot500',fmt(currentLottery==='grand' ? pool() : menuJackpotGrand)); setText('ticketCount',fmt(myTickets.length)); setText('playerCount','—'); setText('drawStatus',closed?'Closed':'Open'); setText('salesStatusLabel',settings?.sales_open===false?'Closed':'Open');
     $('accountLoginFields').classList.toggle('hidden',!!session); $('accountIntro').classList.toggle('hidden',!!session);
     $('createAccountBtn').classList.toggle('hidden',!!session); $('loginBtn').classList.toggle('hidden',!!session); $('logoutBtn').classList.toggle('hidden',!session);
@@ -289,7 +292,8 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
   $('createAccountBtn').addEventListener('click',createAccount); $('loginBtn').addEventListener('click',login);
   $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();profile=null;session=null;isAdmin=false;await refreshData();toast('Logged out.');});
   $('requestWithdrawBtn').addEventListener('click',async()=>{if(!session){toast('Log in before requesting a withdrawal.');return;}const amount=Number($('withdrawAmount').value);if(!Number.isSafeInteger(amount)||amount<1){toast('Enter a whole gold amount of at least 1.');return;}const {error}=await supabase.rpc('request_lottery_withdrawal',{p_amount:amount});if(error){await showError(error);return;}$('withdrawAmount').value='';toast(`Withdrawal requested. List Raw Copper for ${fmt(amount)} gold on the global market.`);await refreshData();});
-  $('buyBtn').addEventListener('click',async()=>{if(!session){toast('Create an account or log in first.');return;}const quantity=Number($('quantity').value);const {data,error}=await supabase.rpc('buy_lottery_tickets',{p_quantity:quantity,p_lottery_id:currentLottery});if(error){await showError(error);return;}toast(`Purchased ${Array.isArray(data)?data.length:quantity} ticket(s)! Good luck.`);await refreshData();});
+  $('buyBtn').addEventListener('click',async()=>{if(!session){toast('Create an account or log in first.');return;}if(!currentLottery){toast('Choose Mini or Grand Lottery first.');return;}const quantity=Number($('quantity').value);const {data,error}=await supabase.rpc('buy_lottery_tickets',{p_quantity:quantity,p_lottery_id:currentLottery});if(error){await showError(error);return;}toast(`Purchased ${Array.isArray(data)?data.length:quantity} ticket(s)! 10% organizer fee included. Good luck.`);await refreshData();});
+  $('quantity').addEventListener('change',()=>{const activeTicketPrice=Number(settings?.ticket_price ?? (currentLottery==='mini'?menuPriceMini:menuPriceGrand));const qty=Number($('quantity').value),baseTotal=activeTicketPrice*qty,fee=Math.ceil(baseTotal*0.10);setText('purchaseTotalEstimate',currentLottery?`${fmt(baseTotal)} gold tickets + ${fmt(fee)} gold 10% fee = ${fmt(baseTotal+fee)} gold total.`:'Choose Mini or Grand to see the total including the 10% fee.');});
   document.querySelectorAll('[data-lottery]').forEach(btn=>btn.addEventListener('click',async()=>{currentLottery=btn.dataset.lottery;settings=null;myTickets=[];render();window.scrollTo({top:0,behavior:'smooth'});await refreshData();}));
   $('backToMenuBtn').addEventListener('click',()=>{currentLottery=null;settings=null;myTickets=[];render();window.scrollTo({top:0,behavior:'smooth'});refreshData();});
   $('refreshBtn').addEventListener('click',async()=>{await refreshData();toast('Display refreshed.');});
