@@ -624,7 +624,29 @@ export type Database = {
       };
       admin_credit_gold: { Args: { p_amount: number; p_username: string }; Returns: number };
       admin_delete_all_lottery_tickets: { Args: Record<PropertyKey, never>; Returns: number };
+      admin_draw_stats: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          draw_id: number;
+          fees: number;
+          lottery_id: string;
+          players: number;
+          tickets: number;
+        }[];
+      };
       admin_get_fee_earnings: { Args: Record<PropertyKey, never>; Returns: number };
+      admin_house_numbers: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          balances: number;
+          fees: number;
+          mismatches: number;
+          owed_to_players: number;
+          pending_withdrawals: number;
+          seed_gold: number;
+          ticket_gold: number;
+        }[];
+      };
       admin_process_deposit: { Args: { p_approve: boolean; p_force?: boolean; p_request_id: number }; Returns: string };
       admin_process_withdrawal: { Args: { p_approve: boolean; p_request_id: number }; Returns: undefined };
       admin_reopen_draw: { Args: { p_lottery_id: string }; Returns: number };
