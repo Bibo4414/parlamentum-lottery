@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests && tsc --noEmit -p supabase/functions",
     "test": "vitest run",
     "db:start": "npx -y supabase@2.119.0 start",
     "db:stop": "npx -y supabase@2.119.0 stop",
