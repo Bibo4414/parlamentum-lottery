@@ -96,6 +96,47 @@ export type Database = {
           },
         ];
       };
+      gold_moves: {
+        Row: {
+          actor: string | null;
+          created_at: string;
+          delta: number;
+          id: number;
+          kind: string;
+          note: string | null;
+          ref: string | null;
+          user_id: string;
+        };
+        Insert: {
+          actor?: string | null;
+          created_at?: string;
+          delta: number;
+          id?: never;
+          kind: string;
+          note?: string | null;
+          ref?: string | null;
+          user_id: string;
+        };
+        Update: {
+          actor?: string | null;
+          created_at?: string;
+          delta?: number;
+          id?: never;
+          kind?: string;
+          note?: string | null;
+          ref?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "gold_moves_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "player_profiles";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
       lottery_admins: {
         Row: {
           added_at: string;
@@ -111,27 +152,68 @@ export type Database = {
         };
         Relationships: [];
       };
+      lottery_draw_secrets: {
+        Row: {
+          draw_id: number;
+          seed: string;
+        };
+        Insert: {
+          draw_id: number;
+          seed: string;
+        };
+        Update: {
+          draw_id?: number;
+          seed?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lottery_draw_secrets_draw_id_fkey";
+            columns: ["draw_id"];
+            isOneToOne: true;
+            referencedRelation: "lottery_draws";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       lottery_draws: {
         Row: {
           drawn_at: string | null;
           id: number;
           lottery_id: string;
           opened_at: string;
+          seed: string | null;
+          seed_hash: string | null;
           status: string;
+          ticket_count: number | null;
+          tickets_digest: string | null;
+          winning_index: number | null;
+          winning_ticket: number | null;
         };
         Insert: {
           drawn_at?: string | null;
           id?: never;
           lottery_id: string;
           opened_at?: string;
+          seed?: string | null;
+          seed_hash?: string | null;
           status?: string;
+          ticket_count?: number | null;
+          tickets_digest?: string | null;
+          winning_index?: number | null;
+          winning_ticket?: number | null;
         };
         Update: {
           drawn_at?: string | null;
           id?: never;
           lottery_id?: string;
           opened_at?: string;
+          seed?: string | null;
+          seed_hash?: string | null;
           status?: string;
+          ticket_count?: number | null;
+          tickets_digest?: string | null;
+          winning_index?: number | null;
+          winning_ticket?: number | null;
         };
         Relationships: [
           {
@@ -279,6 +361,7 @@ export type Database = {
           lottery_id: string;
           price_each: number;
           quantity: number;
+          refunded_at: string | null;
           user_id: string;
         };
         Insert: {
@@ -289,6 +372,7 @@ export type Database = {
           lottery_id: string;
           price_each: number;
           quantity: number;
+          refunded_at?: string | null;
           user_id: string;
         };
         Update: {
@@ -299,6 +383,7 @@ export type Database = {
           lottery_id?: string;
           price_each?: number;
           quantity?: number;
+          refunded_at?: string | null;
           user_id?: string;
         };
         Relationships: [
@@ -395,7 +480,28 @@ export type Database = {
           ticket_number: number;
         }[];
       };
+      draw_tickets: {
+        Args: { p_draw_id: number };
+        Returns: {
+          ticket_number: number;
+          username: string;
+        }[];
+      };
+      gold_mismatches: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          gold: number;
+          ledger: number;
+          username: string;
+        }[];
+      };
       is_lottery_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      move_gold: {
+        Args: { p_delta: number; p_kind: string; p_note?: string; p_ref?: string; p_user: string };
+        Returns: number;
+      };
+      open_draw: { Args: { p_lottery_id: string }; Returns: number };
+      refund_draw: { Args: { p_draw_id: number }; Returns: number };
       request_lottery_deposit: { Args: { p_amount: number }; Returns: number };
       request_lottery_withdrawal: { Args: { p_amount: number }; Returns: number };
       require_lottery_admin: { Args: Record<PropertyKey, never>; Returns: undefined };

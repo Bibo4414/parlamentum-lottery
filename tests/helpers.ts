@@ -36,7 +36,8 @@ export async function player(gold = 0, username = unique('p')): Promise<Player> 
   const email = `${username.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}@players.lottery.test`;
   const { data, error } = await service.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username } });
   if (error) throw error;
-  if (gold) await ok(service.from('player_profiles').update({ gold }).eq('user_id', data.user.id));
+  // funded through the ledger, like any credit
+  if (gold) await must(service.rpc('move_gold', { p_user: data.user.id, p_delta: gold, p_kind: 'credit', p_note: 'test funds' }));
   const client = createClient<Database>(stack.url, stack.publishable, options);
   const { error: signInError } = await client.auth.signInWithPassword({ email, password: PASSWORD });
   if (signInError) throw signInError;
@@ -53,8 +54,8 @@ export async function organizer(): Promise<Player> {
 export async function game(price = 10, seed = 100): Promise<string> {
   const id = unique('g').toLowerCase();
   await ok(service.from('lottery_games').insert({ id, name: id, jackpot: seed, default_jackpot: seed, ticket_price: price }));
-  const draw = await must(service.from('lottery_draws').insert({ lottery_id: id }).select('id').single());
-  await ok(service.from('lottery_games').update({ current_draw_id: draw.id }).eq('id', id));
+  const draw = await must(service.rpc('open_draw', { p_lottery_id: id }));
+  await ok(service.from('lottery_games').update({ current_draw_id: draw }).eq('id', id));
   return id;
 }
 
