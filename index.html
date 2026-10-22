@@ -34,7 +34,13 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     <div id="depositTabContent">
       <h2 class="section-title">How to deposit gold</h2>
       <p class="notice" style="margin-top:0">Go to the global market and buy Raw Copper for 1.05 gold from Bibo4414 , the amount you buy is the amount of gold you will be credited.</p>
-      <p class="notice">After I verify your purchase, I will add the matching gold to your lottery balance.</p>
+      <p class="notice">After you buy, enter the same amount below. I'll check the trade and approve it, and the gold is added to your balance. You can have up to 3 pending requests at a time.</p>
+      <div class="withdraw-row" style="margin-top:12px">
+        <div class="field" style="flex:1;min-width:180px"><label for="depositAmount">Raw Copper you bought (= gold to credit)</label><input id="depositAmount" type="number" min="1" max="1000000" step="1" placeholder="Enter amount"></div>
+        <button class="btn goldbtn" id="requestDepositBtn" type="button">I've paid, request deposit</button>
+      </div>
+      <p class="notice" id="depositStatus">Log in to request a deposit.</p>
+      <div id="myPendingDeposits" class="list" style="margin-top:10px"></div>
     </div>
     <div id="withdrawTabContent" class="hidden">
       <h2 class="section-title">Withdraw gold</h2>
@@ -136,7 +142,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
           <div class="subpanel"><h3 style="margin:0 0 10px;font-size:1rem">🔎 Player lookup</h3><div class="field"><label for="lookupUser">Username</label><input id="lookupUser" maxlength="24" placeholder="Enter exact username"></div><div class="form-actions"><button class="btn secondary" id="lookupBtn">Look up player</button></div><div id="lookupResult" class="notice">Look up a player to see their balance, tickets, and purchase history.</div></div>
         </div>
         <div class="subpanel" style="margin-top:12px"><h3 style="margin:0 0 10px;font-size:1rem">📤 Withdrawals pending</h3><p class="notice" style="margin-top:0">Review requested withdrawals. Completing a request removes it from this pending list; rejecting it refunds the reserved gold to the player.</p><div id="pendingWithdrawalsList" class="list"><div class="empty">No pending withdrawals.</div></div></div>
-        <div class="subpanel" style="margin-top:12px"><h3 style="margin:0 0 10px;font-size:1rem">🧾 My activity log</h3><div id="auditLog" class="list audit-list"><div class="empty">No activity recorded yet.</div></div></div>
+        <div class="subpanel" style="margin-top:12px"><h3 style="margin:0 0 10px;font-size:1rem">💰 Pending deposits</h3><p class="notice" style="margin-top:0">Check the Raw Copper trade in-game first. "Mark paid &amp; credit gold" adds the gold and closes the request. Reject closes it without crediting.</p><div id="auditLog" class="list audit-list"><div class="empty">No activity recorded yet.</div></div></div>
         <div class="form-actions"><button class="btn goldbtn" id="drawBtn">Close sales & draw winner</button><button class="btn secondary" id="reopenBtn">Reopen next draw</button><button class="btn secondary" id="resetBtn">Reset all data</button></div>
         <div class="form-actions"><button class="btn secondary" id="deleteAllTicketsBtn" type="button">Delete all tickets (testing only)</button></div><p class="notice">Testing only: this removes all tickets from both lotteries with NO refunds and does not reset jackpots. Player gold balances and past-winner history are kept.</p>
         </div>
@@ -160,7 +166,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
   const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   let session = null, profile = null, isAdmin = false, settings = null, myTickets = [], history = [];
-  let pendingWithdrawals = [], auditMessages = [];
+  let pendingWithdrawals = [], auditMessages = [], myDeposits = [];
   let menuJackpotMini=0, menuJackpotGrand=500;
   function toast(msg){const el=$('toast');el.textContent=msg;el.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.style.display='none',3200);}
   function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
@@ -196,7 +202,11 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     if(adminResult.error) console.error(adminResult.error);
     history=!historyResult.error ? (historyResult.data||[]) : [];
     if(historyResult.error) console.error(historyResult.error);
-    myTickets=[]; pendingWithdrawals=[]; auditMessages=[];
+    myTickets=[]; pendingWithdrawals=[]; auditMessages=[]; myDeposits=[];
+    if(session){
+      const myDep=await supabase.from('deposit_requests').select('id,amount,status,created_at').eq('user_id',session.user.id).eq('status','pending').order('created_at');
+      if(!myDep.error) myDeposits=myDep.data||[]; else console.error(myDep.error);
+    }
 
     const ticketsPromise = session && currentLottery && settings?.current_draw_id
       ? supabase.from('lottery_tickets').select('id,ticket_number,draw_id,created_at').eq('user_id',session.user.id).eq('draw_id',settings.current_draw_id).eq('lottery_id',currentLottery).order('ticket_number')
@@ -241,7 +251,9 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     setText('accountStatus',session?`Logged in as ${name || session.user.email}. Your balance and tickets are stored online.`:'Create an account or log in with your username and password. Email is optional.');
     setText('purchaseLoginNotice',session?'You are logged in and can buy tickets using this account balance.':'Log in above to buy tickets. Your tickets and balance are stored online.');
     $('accountUsername').disabled=!!session; $('accountEmail').disabled=!!session; $('accountPassword').disabled=!!session;
-    $('requestWithdrawBtn').disabled=!session;
+    $('requestWithdrawBtn').disabled=!session; $('requestDepositBtn').disabled=!session || myDeposits.length>=3;
+    setText('depositStatus',!session?'Log in to request a deposit.':myDeposits.length>=3?'You have 3 pending requests. Wait for one to be approved before sending another.':`You have ${myDeposits.length} of 3 pending requests.`);
+    $('myPendingDeposits').innerHTML=myDeposits.map(d=>`<div class="entry"><span>Pending · ${fmt(d.amount)} gold · ${esc(new Date(d.created_at).toLocaleString())}</span><span>Waiting for approval</span></div>`).join('');
     setText('withdrawStatus',session?'Your withdrawal request will be held while I review it.':'Log in to request a withdrawal.');
     $('buyBtn').disabled=!session || closed || !currentLottery; $('quantity').disabled=!session || closed || !currentLottery;
     $('lotteryMenu').classList.toggle('hidden',!!currentLottery); $('lotteryGameArea').classList.toggle('hidden',!currentLottery);
@@ -256,7 +268,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
     if(isAdmin){
       $('pendingWithdrawalsList').innerHTML=pendingWithdrawals.length?pendingWithdrawals.map(w=>`<div class="pending-withdrawal"><strong>${esc(w.player_profiles?.username||'Player')}</strong> requested <strong>${fmt(w.amount)} gold</strong><div class="hint">Request #${w.id} · ${esc(new Date(w.created_at).toLocaleString())}</div><div class="hint">Tell the player: List Raw Copper for ${fmt(w.amount)} gold on the global market.</div><div class="pending-actions"><button class="btn goldbtn" data-withdraw="${w.id}" data-approve="true">Mark completed</button><button class="btn secondary" data-withdraw="${w.id}" data-approve="false">Reject & refund</button></div></div>`).join(''):'<div class="empty">No pending withdrawals. If requests exist but are not shown, run the admin read-policy SQL I provide separately.</div>';
       $('pendingWithdrawalsList').querySelectorAll('[data-withdraw]').forEach(b=>b.addEventListener('click',()=>processWithdrawal(Number(b.dataset.withdraw),b.dataset.approve==='true')));
-      $('auditLog').innerHTML=auditMessages.length?auditMessages.map(d=>`<div class="entry"><span>Deposit request #${d.id} · ${esc(d.player_profiles?.username||'Player')} · ${fmt(d.amount)} gold</span><span><button class="btn goldbtn" data-deposit="${d.id}" data-approve="true">Approve</button> <button class="btn secondary" data-deposit="${d.id}" data-approve="false">Reject</button></span></div>`).join(''):'<div class="empty">No pending deposits.</div>';
+      $('auditLog').innerHTML=auditMessages.length?auditMessages.map(d=>`<div class="entry"><span><strong>${esc(d.player_profiles?.username||'Player')}</strong> paid for <strong>${fmt(d.amount)} gold</strong> · request #${d.id} · ${esc(new Date(d.created_at).toLocaleString())}</span><span><button class="btn goldbtn" data-deposit="${d.id}" data-approve="true">Mark paid &amp; credit gold</button> <button class="btn secondary" data-deposit="${d.id}" data-approve="false">Reject</button></span></div>`).join(''):'<div class="empty">No pending deposits.</div>';
       $('auditLog').querySelectorAll('[data-deposit]').forEach(b=>b.addEventListener('click',()=>processDeposit(Number(b.dataset.deposit),b.dataset.approve==='true')));
     } else { $('pendingWithdrawalsList').innerHTML='<div class="empty">Organizer sign-in required.</div>'; $('auditLog').innerHTML='<div class="empty">Organizer sign-in required.</div>'; }
     $('drawBtn').disabled=!isAdmin || !currentLottery; $('reopenBtn').disabled=!isAdmin || !currentLottery; $('resetBtn').disabled=!isAdmin; $('scheduleBtn').disabled=!isAdmin || !currentLottery; $('clearScheduleBtn').disabled=!isAdmin || !currentLottery; $('openSalesBtn').disabled=!isAdmin || !currentLottery; $('closeSalesBtn').disabled=!isAdmin || !currentLottery; if(settings?.draw_at){const d=new Date(settings.draw_at);$('drawDateInput').value=d.toISOString().slice(0,16);} else $('drawDateInput').value='';
@@ -295,6 +307,7 @@ h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:18px 0 9px;letter-sp
   $('createAccountBtn').addEventListener('click',createAccount); $('loginBtn').addEventListener('click',login);
   $('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();profile=null;session=null;isAdmin=false;await refreshData();toast('Logged out.');});
   $('requestWithdrawBtn').addEventListener('click',async()=>{if(!session){toast('Log in before requesting a withdrawal.');return;}const amount=Number($('withdrawAmount').value);if(!Number.isSafeInteger(amount)||amount<1){toast('Enter a whole gold amount of at least 1.');return;}const {error}=await supabase.rpc('request_lottery_withdrawal',{p_amount:amount});if(error){await showError(error);return;}$('withdrawAmount').value='';toast(`Withdrawal requested. List Raw Copper for ${fmt(amount)} gold on the global market.`);await refreshData();});
+  $('requestDepositBtn').addEventListener('click',async()=>{if(!session){toast('Log in before requesting a deposit.');return;}const amount=Number($('depositAmount').value);if(!Number.isSafeInteger(amount)||amount<1||amount>1000000){toast('Enter a whole amount from 1 to 1,000,000.');return;}const {error}=await supabase.rpc('request_lottery_deposit',{p_amount:amount});if(error){await showError(error);return;}$('depositAmount').value='';toast(`Deposit request for ${fmt(amount)} gold sent. I'll approve it after I verify the trade.`);await refreshData();});
   $('buyBtn').addEventListener('click',async()=>{if(!session){toast('Create an account or log in first.');return;}if(!currentLottery){toast('Choose Mini or Grand Lottery first.');return;}const quantity=Number($('quantity').value);const {data,error}=await supabase.rpc('buy_lottery_tickets',{p_quantity:quantity,p_lottery_id:currentLottery});if(error){await showError(error);return;}toast(`Purchased ${Array.isArray(data)?data.length:quantity} ticket(s)! 10% organizer fee included. Good luck.`);await refreshData();});
   $('quantity').addEventListener('change',()=>{const activeTicketPrice=Number(settings?.ticket_price ?? (currentLottery==='mini'?menuPriceMini:menuPriceGrand));const qty=Number($('quantity').value),baseTotal=activeTicketPrice*qty,fee=Math.ceil(baseTotal*0.10);setText('purchaseTotalEstimate',currentLottery?`${fmt(baseTotal)} gold tickets + ${fmt(fee)} gold 10% fee = ${fmt(baseTotal+fee)} gold total.`:'Choose Mini or Grand to see the total including the 10% fee.');});
   document.querySelectorAll('[data-lottery]').forEach(btn=>btn.addEventListener('click',async()=>{currentLottery=btn.dataset.lottery;settings=null;myTickets=[];render();window.scrollTo({top:0,behavior:'smooth'});await refreshData();}));
