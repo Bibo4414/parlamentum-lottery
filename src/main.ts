@@ -1,0 +1,425 @@
+// The lottery page: what used to be index.html's inline script, now typed. Same behaviour, same Supabase calls.
+import { createClient, type Session } from '@supabase/supabase-js';
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from './config.ts';
+import type { Database, Tables } from './database.types.ts';
+
+type LotteryId = 'mini' | 'grand';
+type Game = Pick<Tables<'lottery_games'>, 'id' | 'name' | 'jackpot' | 'ticket_price' | 'sales_open' | 'draw_at' | 'current_draw_id'>;
+type Profile = Pick<Tables<'player_profiles'>, 'user_id' | 'username' | 'gold'>;
+type Ticket = Pick<Tables<'lottery_tickets'>, 'id' | 'ticket_number' | 'draw_id' | 'created_at'>;
+type Winner = Pick<Tables<'draw_history'>, 'id' | 'winner_username' | 'prize_gold' | 'drawn_at' | 'lottery_id' | 'ticket_number'>;
+type Deposit = Pick<Tables<'deposit_requests'>, 'id' | 'amount' | 'status' | 'created_at'>;
+type Request = Pick<Tables<'withdrawal_requests'>, 'id' | 'user_id' | 'amount' | 'status' | 'created_at'>;
+type Named = { player_profiles: { username: string } };
+
+const LOTTERIES: Record<LotteryId, { name: string; jackpot: number; ticketPrice: number }> = {
+  mini: { name: 'Mini Lottery', jackpot: 0, ticketPrice: 10 },
+  grand: { name: 'Grand Lottery', jackpot: 500, ticketPrice: 50 },
+};
+const isLotteryId = (id: string | undefined): id is LotteryId => id === 'mini' || id === 'grand';
+let menuPriceMini = 10, menuPriceGrand = 50;
+let currentLottery: LotteryId | null = null;
+
+/** The page's elements: markup that's missing is a bug in index.html, so it fails loudly. */
+function $<T extends HTMLElement = HTMLElement>(id: string): T {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`#${id} is missing from index.html`);
+  return el as T;
+}
+const input = (id: string) => $<HTMLInputElement>(id);
+const button = (id: string) => $<HTMLButtonElement>(id);
+const fmt = (n: unknown) => Number(n || 0).toLocaleString();
+const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c);
+
+const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+let session: Session | null = null, profile: Profile | null = null, isAdmin = false, settings: Game | null = null;
+let myTickets: Ticket[] = [], history: Winner[] = [];
+let pendingWithdrawals: (Request & Named)[] = [], auditMessages: (Request & Named & { kind: 'deposit' })[] = [], myDeposits: Deposit[] = [];
+let menuJackpotMini = 0, menuJackpotGrand = 500;
+
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+function toast(msg: string) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (el.style.display = 'none'), 3200);
+}
+function setText(id: string, value: string) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+function currentName() { return profile?.username || ''; }
+function lotteryLabel(id: string | null) { return id === 'mini' ? 'Mini Lottery' : id === 'grand' ? 'Grand Lottery' : 'Earlier draw'; }
+function pool() { return Number(settings?.jackpot ?? (currentLottery ? LOTTERIES[currentLottery].jackpot : 0)); }
+function salesClosed() {
+  return settings?.sales_open === false || (!!settings?.draw_at && new Date(settings.draw_at).getTime() <= Date.now());
+}
+const activePrice = () => Number(settings?.ticket_price ?? (currentLottery === 'mini' ? menuPriceMini : menuPriceGrand));
+
+async function refreshData() {
+  // Fetch independent Supabase data together so changing lotteries feels faster.
+  const { data: { session: s } } = await supabase.auth.getSession();
+  session = s;
+
+  const selectedGamePromise = currentLottery
+    ? supabase.from('lottery_games').select('id,name,jackpot,ticket_price,sales_open,draw_at,current_draw_id').eq('id', currentLottery).maybeSingle()
+    : Promise.resolve({ data: null, error: null });
+  const menuGamesPromise = supabase.from('lottery_games').select('id,jackpot,ticket_price');
+  const historyPromise = supabase.from('draw_history').select('id,winner_username,prize_gold,drawn_at,lottery_id,ticket_number').order('drawn_at', { ascending: false }).limit(20);
+  const profilePromise = session
+    ? supabase.from('player_profiles').select('user_id,username,gold').eq('user_id', session.user.id).maybeSingle()
+    : Promise.resolve({ data: null, error: null });
+  const adminPromise = session ? supabase.rpc('is_lottery_admin') : Promise.resolve({ data: false, error: null });
+
+  const [gameResult, menuResult, historyResult, profileResult, adminResult] = await Promise.all([
+    selectedGamePromise, menuGamesPromise, historyPromise, profilePromise, adminPromise,
+  ]);
+  if (adminResult.data === true) {
+    const feeResult = await supabase.rpc('admin_get_fee_earnings');
+    if (!feeResult.error) setText('adminFeeEarnings', fmt(feeResult.data || 0));
+  }
+  if (!gameResult.error) settings = gameResult.data || null; else { settings = null; console.error(gameResult.error); }
+  if (menuResult.data) {
+    menuResult.data.forEach((g) => {
+      if (g.id === 'mini') { menuJackpotMini = Number(g.jackpot); menuPriceMini = Number(g.ticket_price) || 10; }
+      if (g.id === 'grand') { menuJackpotGrand = Number(g.jackpot); menuPriceGrand = Number(g.ticket_price) || 50; }
+    });
+  } else if (menuResult.error) console.warn('Lottery menu jackpot values could not be loaded yet.', menuResult.error);
+  if (!profileResult.error) profile = profileResult.data || null; else { profile = null; console.error(profileResult.error); }
+  isAdmin = !adminResult.error && !!adminResult.data;
+  if (adminResult.error) console.error(adminResult.error);
+  history = !historyResult.error ? historyResult.data || [] : [];
+  if (historyResult.error) console.error(historyResult.error);
+  myTickets = []; pendingWithdrawals = []; auditMessages = []; myDeposits = [];
+  if (session) {
+    const myDep = await supabase.from('deposit_requests').select('id,amount,status,created_at').eq('user_id', session.user.id).eq('status', 'pending').order('created_at');
+    if (!myDep.error) myDeposits = myDep.data || []; else console.error(myDep.error);
+  }
+
+  const ticketsPromise = session && currentLottery && settings?.current_draw_id
+    ? supabase.from('lottery_tickets').select('id,ticket_number,draw_id,created_at').eq('user_id', session.user.id).eq('draw_id', settings.current_draw_id).eq('lottery_id', currentLottery).order('ticket_number')
+    : Promise.resolve({ data: [], error: null });
+  const withdrawalsPromise = session && isAdmin
+    ? supabase.from('withdrawal_requests').select('id,user_id,amount,status,created_at').eq('status', 'pending').order('created_at')
+    : Promise.resolve({ data: [], error: null });
+  const depositsPromise = session && isAdmin
+    ? supabase.from('deposit_requests').select('id,user_id,amount,status,created_at').eq('status', 'pending').order('created_at')
+    : Promise.resolve({ data: [], error: null });
+  const [ticketsResult, withdrawalsResult, depositsResult] = await Promise.all([ticketsPromise, withdrawalsPromise, depositsPromise]);
+  if (!ticketsResult.error) myTickets = ticketsResult.data || []; else console.error(ticketsResult.error);
+
+  async function attachUsernames(rows: { user_id: string }[]): Promise<Record<string, string>> {
+    const ids = [...new Set((rows || []).map((x) => x.user_id))];
+    if (!ids.length) return {};
+    const { data, error } = await supabase.from('player_profiles').select('user_id,username').in('user_id', ids);
+    if (error) { console.error(error); return {}; }
+    const names: Record<string, string> = {};
+    (data || []).forEach((x) => (names[x.user_id] = x.username));
+    return names;
+  }
+  if (!withdrawalsResult.error) {
+    const rows = withdrawalsResult.data || [], names = await attachUsernames(rows);
+    pendingWithdrawals = rows.map((x) => ({ ...x, player_profiles: { username: names[x.user_id] || 'Player' } }));
+  } else console.error(withdrawalsResult.error);
+  if (!depositsResult.error) {
+    const rows = depositsResult.data || [], names = await attachUsernames(rows);
+    auditMessages = rows.map((x) => ({ kind: 'deposit' as const, ...x, player_profiles: { username: names[x.user_id] || 'Player' } }));
+  } else console.error(depositsResult.error);
+  render();
+}
+
+function purchaseTotalText() {
+  const qty = Number($<HTMLSelectElement>('quantity').value || 1), baseTotal = activePrice() * qty, fee = Math.ceil(baseTotal * 0.1);
+  return currentLottery
+    ? `${fmt(baseTotal)} gold tickets + ${fmt(fee)} gold 10% fee = ${fmt(baseTotal + fee)} gold total.`
+    : 'Choose Mini or Grand to see the total including the 10% fee.';
+}
+
+function render() {
+  const name = currentName(), balance = Number(profile?.gold || 0), closed = salesClosed();
+  const activeTicketPrice = activePrice();
+  setText('selectedLotteryName', currentLottery ? LOTTERIES[currentLottery].name : 'Choose a lottery');
+  setText('selectedTicketPrice', currentLottery ? fmt(activeTicketPrice) + ' gold / ticket' : '');
+  setText('howTicketPrice', currentLottery ? fmt(activeTicketPrice) + ' gold' : 'Choose a lottery');
+  setText('menuJackpot100', fmt(menuJackpotMini)); setText('menuJackpot500', fmt(menuJackpotGrand));
+  setText('menuPriceMini', fmt(menuPriceMini)); setText('menuPriceGrand', fmt(menuPriceGrand));
+  setText('adminCurrentTicketPrice', currentLottery ? fmt(activeTicketPrice) : '—');
+  setText('balance', fmt(balance)); setText('topGoldBalance', fmt(balance)); setText('pool', fmt(pool())); setText('adminCurrentPool', fmt(pool()));
+  setText('purchaseTotalEstimate', purchaseTotalText());
+  setText('menuJackpot100', fmt(currentLottery === 'mini' ? pool() : menuJackpotMini));
+  setText('menuJackpot500', fmt(currentLottery === 'grand' ? pool() : menuJackpotGrand));
+  setText('ticketCount', fmt(myTickets.length)); setText('playerCount', '—'); setText('drawStatus', closed ? 'Closed' : 'Open');
+  setText('salesStatusLabel', settings?.sales_open === false ? 'Closed' : 'Open');
+  $('accountLoginFields').classList.toggle('hidden', !!session); $('accountIntro').classList.toggle('hidden', !!session);
+  $('createAccountBtn').classList.toggle('hidden', !!session); $('loginBtn').classList.toggle('hidden', !!session); $('logoutBtn').classList.toggle('hidden', !session);
+  $('accountHeading').textContent = session ? '👤 Account' : '🔐 Account access';
+  setText('accountStatus', session ? `Logged in as ${name || session.user.email}. Your balance and tickets are stored online.` : 'Create an account or log in with your username and password. Email is optional.');
+  setText('purchaseLoginNotice', session ? 'You are logged in and can buy tickets using this account balance.' : 'Log in above to buy tickets. Your tickets and balance are stored online.');
+  input('accountUsername').disabled = !!session; input('accountEmail').disabled = !!session; input('accountPassword').disabled = !!session;
+  button('requestWithdrawBtn').disabled = !session; button('requestDepositBtn').disabled = !session || myDeposits.length >= 3;
+  setText('depositStatus', !session ? 'Log in to request a deposit.' : myDeposits.length >= 3 ? 'You have 3 pending requests. Wait for one to be approved before sending another.' : `You have ${myDeposits.length} of 3 pending requests.`);
+  $('myPendingDeposits').innerHTML = myDeposits.map((d) => `<div class="entry"><span>Pending · ${fmt(d.amount)} gold · ${esc(new Date(d.created_at).toLocaleString())}</span><span>Waiting for approval</span></div>`).join('');
+  setText('withdrawStatus', session ? 'Your withdrawal request will be held while I review it.' : 'Log in to request a withdrawal.');
+  button('buyBtn').disabled = !session || closed || !currentLottery; $<HTMLSelectElement>('quantity').disabled = !session || closed || !currentLottery;
+  $('lotteryMenu').classList.toggle('hidden', !!currentLottery); $('lotteryGameArea').classList.toggle('hidden', !currentLottery);
+  $('myTickets').innerHTML = myTickets.length
+    ? myTickets.map((t) => `<span class="ticket">#${fmt(t.ticket_number)}</span>`).join('')
+    : `<div class="empty">${session ? 'No tickets for this account in the current draw.' : 'Log in to view your tickets.'}</div>`;
+  $('recentEntries').innerHTML = myTickets.length
+    ? [...myTickets].reverse().slice(0, 8).map((t) => `<div class="entry"><span>Your ticket</span><span>#${fmt(t.ticket_number)}</span></div>`).join('')
+    : '<div class="empty">No visible ticket entries yet.</div>';
+  $('pastWinners').innerHTML = history.length
+    ? history.map((d) => `<div class="history-item"><div><strong>Winner: ${esc(d.winner_username || 'Unknown')}</strong></div><div class="hint">${esc(lotteryLabel(d.lottery_id))}${d.ticket_number ? ' · Ticket #' + fmt(d.ticket_number) : ''}</div><div class="hint">Prize: ${fmt(d.prize_gold)} gold · ${esc(d.drawn_at ? new Date(d.drawn_at).toLocaleString() : 'Date unavailable')}</div></div>`).join('')
+    : '<div class="empty">No completed draws yet.</div>';
+  const latest = history[0];
+  $('winnerDisplay').innerHTML = latest
+    ? `<div class="winner"><div class="eyebrow">Most recent winner</div><strong>${esc(latest.winner_username || 'Unknown')}</strong><div class="hint">${esc(lotteryLabel(latest.lottery_id))}${latest.ticket_number ? ' · Ticket #' + fmt(latest.ticket_number) : ''}</div><div class="hint">Prize: ${fmt(latest.prize_gold)} gold (paid automatically)</div></div>`
+    : '<div class="empty">No winner drawn yet.</div>';
+  $('countdown').textContent = settings?.draw_at ? (new Date(settings.draw_at).getTime() <= Date.now() ? 'Draw time reached' : new Date(settings.draw_at).toLocaleString()) : 'No draw scheduled';
+  $('drawDateLabel').textContent = settings?.draw_at ? 'Scheduled for ' + new Date(settings.draw_at).toLocaleString() : 'I haven’t set a draw time yet.';
+  $('adminProtectedControls').classList.toggle('hidden', !isAdmin); $('unlockAdminBtn').classList.toggle('hidden', isAdmin); $('lockAdminBtn').classList.toggle('hidden', !isAdmin);
+  $('adminCode').closest('.field')?.classList.add('hidden');
+  if (isAdmin) {
+    $('pendingWithdrawalsList').innerHTML = pendingWithdrawals.length
+      ? pendingWithdrawals.map((w) => `<div class="pending-withdrawal"><strong>${esc(w.player_profiles?.username || 'Player')}</strong> requested <strong>${fmt(w.amount)} gold</strong><div class="hint">Request #${w.id} · ${esc(new Date(w.created_at).toLocaleString())}</div><div class="hint">Tell the player: List Raw Copper for ${fmt(w.amount)} gold on the global market.</div><div class="pending-actions"><button class="btn goldbtn" data-withdraw="${w.id}" data-approve="true">Mark completed</button><button class="btn secondary" data-withdraw="${w.id}" data-approve="false">Reject & refund</button></div></div>`).join('')
+      : '<div class="empty">No pending withdrawals. If requests exist but are not shown, run the admin read-policy SQL I provide separately.</div>';
+    $('pendingWithdrawalsList').querySelectorAll<HTMLElement>('[data-withdraw]').forEach((b) => b.addEventListener('click', () => processWithdrawal(Number(b.dataset.withdraw), b.dataset.approve === 'true')));
+    $('auditLog').innerHTML = auditMessages.length
+      ? auditMessages.map((d) => `<div class="entry"><span><strong>${esc(d.player_profiles?.username || 'Player')}</strong> paid for <strong>${fmt(d.amount)} gold</strong> · request #${d.id} · ${esc(new Date(d.created_at).toLocaleString())}</span><span><button class="btn goldbtn" data-deposit="${d.id}" data-approve="true">Mark paid &amp; credit gold</button> <button class="btn secondary" data-deposit="${d.id}" data-approve="false">Reject</button></span></div>`).join('')
+      : '<div class="empty">No pending deposits.</div>';
+    $('auditLog').querySelectorAll<HTMLElement>('[data-deposit]').forEach((b) => b.addEventListener('click', () => processDeposit(Number(b.dataset.deposit), b.dataset.approve === 'true')));
+  } else {
+    $('pendingWithdrawalsList').innerHTML = '<div class="empty">Organizer sign-in required.</div>';
+    $('auditLog').innerHTML = '<div class="empty">Organizer sign-in required.</div>';
+  }
+  button('drawBtn').disabled = !isAdmin || !currentLottery; button('reopenBtn').disabled = !isAdmin || !currentLottery; button('resetBtn').disabled = !isAdmin;
+  button('scheduleBtn').disabled = !isAdmin || !currentLottery; button('clearScheduleBtn').disabled = !isAdmin || !currentLottery;
+  button('openSalesBtn').disabled = !isAdmin || !currentLottery; button('closeSalesBtn').disabled = !isAdmin || !currentLottery;
+  if (settings?.draw_at) { const d = new Date(settings.draw_at); input('drawDateInput').value = d.toISOString().slice(0, 16); } else input('drawDateInput').value = '';
+}
+
+const messageOf = (error: unknown) => (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message : '');
+async function showError(error: unknown, fallback = 'Something went wrong.') { console.error(error); toast(messageOf(error) || fallback); }
+
+function usernameAlias(username: string) {
+  // Supabase Auth requires an email or phone. This deterministic internal alias lets players use usernames instead.
+  // Email confirmation must be disabled in Supabase for these non-deliverable aliases to work.
+  let hash = 2166136261;
+  for (const ch of username.toLowerCase()) { hash ^= ch.charCodeAt(0); hash = Math.imul(hash, 16777619) >>> 0; }
+  const slug = username.toLowerCase().replace(/[^a-z0-9_-]/g, '_').slice(0, 24);
+  return `${slug}.${hash.toString(36)}@players.parlamentum.invalid`;
+}
+
+async function createAccount() {
+  const username = input('accountUsername').value.trim(), email = input('accountEmail').value.trim(), password = input('accountPassword').value;
+  if (!/^[A-Za-z0-9_ -]{3,24}$/.test(username)) { toast('Username must be 3–24 characters (letters, numbers, spaces, _ or -).'); return; }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Enter a valid email address, or leave it blank.'); return; }
+  if (password.length < 8) { toast('Password must be at least 8 characters.'); return; }
+  const authEmail = email || usernameAlias(username);
+  const { data, error } = await supabase.auth.signUp({ email: authEmail, password, options: { data: { username } } });
+  if (error) { await showError(error); return; }
+  if (data.session) toast('Account created! You are logged in.');
+  else toast('Account created. If email confirmation is enabled in Supabase, turn it off to use username-only accounts.');
+  input('accountPassword').value = '';
+  await refreshData();
+}
+
+async function login() {
+  const username = input('accountUsername').value.trim(), email = input('accountEmail').value.trim(), password = input('accountPassword').value;
+  if (!username || !password) { toast('Enter your username and password.'); return; }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Enter a valid email address, or leave it blank to log in by username.'); return; }
+  const authEmail = email || usernameAlias(username);
+  const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
+  if (error) { await showError(error, 'Could not log in. If this is your older organizer account, enter its email in the optional email field.'); return; }
+  input('accountPassword').value = '';
+  await refreshData();
+  toast('Logged in successfully.');
+}
+
+async function processWithdrawal(id: number, approve: boolean) {
+  const { error } = await supabase.rpc('admin_process_withdrawal', { p_request_id: id, p_approve: approve });
+  if (error) { await showError(error); return; }
+  toast(approve ? 'Withdrawal marked completed.' : 'Withdrawal rejected and refunded.');
+  await refreshData();
+}
+async function processDeposit(id: number, approve: boolean) {
+  const { error } = await supabase.rpc('admin_process_deposit', { p_request_id: id, p_approve: approve });
+  if (error) { await showError(error); return; }
+  toast(approve ? 'Deposit approved and gold added.' : 'Deposit rejected.');
+  await refreshData();
+}
+
+$('openGoldToolsBtn').addEventListener('click', () => {
+  $('goldToolsPanel').classList.toggle('hidden');
+  if (!$('goldToolsPanel').classList.contains('hidden')) $('goldToolsPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+$('depositTabBtn').addEventListener('click', () => { $('depositTabContent').classList.remove('hidden'); $('withdrawTabContent').classList.add('hidden'); });
+$('withdrawTabBtn').addEventListener('click', () => { $('depositTabContent').classList.add('hidden'); $('withdrawTabContent').classList.remove('hidden'); });
+$('createAccountBtn').addEventListener('click', createAccount); $('loginBtn').addEventListener('click', login);
+$('logoutBtn').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  profile = null; session = null; isAdmin = false;
+  await refreshData();
+  toast('Logged out.');
+});
+$('requestWithdrawBtn').addEventListener('click', async () => {
+  if (!session) { toast('Log in before requesting a withdrawal.'); return; }
+  const amount = Number(input('withdrawAmount').value);
+  if (!Number.isSafeInteger(amount) || amount < 1) { toast('Enter a whole gold amount of at least 1.'); return; }
+  const { error } = await supabase.rpc('request_lottery_withdrawal', { p_amount: amount });
+  if (error) { await showError(error); return; }
+  input('withdrawAmount').value = '';
+  toast(`Withdrawal requested. List Raw Copper for ${fmt(amount)} gold on the global market.`);
+  await refreshData();
+});
+$('requestDepositBtn').addEventListener('click', async () => {
+  if (!session) { toast('Log in before requesting a deposit.'); return; }
+  const amount = Number(input('depositAmount').value);
+  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) { toast('Enter a whole amount from 1 to 1,000,000.'); return; }
+  const { error } = await supabase.rpc('request_lottery_deposit', { p_amount: amount });
+  if (error) { await showError(error); return; }
+  input('depositAmount').value = '';
+  toast(`Deposit request for ${fmt(amount)} gold sent. I'll approve it after I verify the trade.`);
+  await refreshData();
+});
+$('buyBtn').addEventListener('click', async () => {
+  if (!session) { toast('Create an account or log in first.'); return; }
+  if (!currentLottery) { toast('Choose Mini or Grand Lottery first.'); return; }
+  const quantity = Number($<HTMLSelectElement>('quantity').value);
+  const { data, error } = await supabase.rpc('buy_lottery_tickets', { p_quantity: quantity, p_lottery_id: currentLottery });
+  if (error) { await showError(error); return; }
+  toast(`Purchased ${Array.isArray(data) ? data.length : quantity} ticket(s)! 10% organizer fee included. Good luck.`);
+  await refreshData();
+});
+$('quantity').addEventListener('change', () => setText('purchaseTotalEstimate', purchaseTotalText()));
+document.querySelectorAll<HTMLElement>('[data-lottery]').forEach((btn) => btn.addEventListener('click', async () => {
+  const id = btn.dataset.lottery;
+  if (!isLotteryId(id)) return;
+  currentLottery = id; settings = null; myTickets = [];
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  await refreshData();
+}));
+$('backToMenuBtn').addEventListener('click', () => {
+  currentLottery = null; settings = null; myTickets = [];
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  refreshData();
+});
+$('refreshBtn').addEventListener('click', async () => { await refreshData(); toast('Display refreshed.'); });
+$('unlockAdminBtn').addEventListener('click', async () => {
+  await refreshData();
+  if (!isAdmin) toast('This signed-in account is not registered as an organizer in Supabase.');
+  else toast('My organizer controls are unlocked.');
+});
+$('lockAdminBtn').addEventListener('click', () => { isAdmin = false; render(); toast('Organizer controls locked.'); });
+$('addCreditsBtn').addEventListener('click', async () => {
+  if (!isAdmin) { toast('Sign in with my organizer account first.'); return; }
+  const username = input('creditUser').value.trim(), amount = Number(input('creditAmount').value);
+  if (!username || !Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) { toast('Enter a username and a whole amount from 1 to 1,000,000.'); return; }
+  const { error } = await supabase.rpc('admin_credit_gold', { p_username: username, p_amount: amount });
+  if (error) { await showError(error); return; }
+  toast(`Added ${fmt(amount)} gold to ${username}.`);
+  await refreshData();
+});
+$('setTicketPriceBtn').addEventListener('click', async () => {
+  if (!isAdmin) { toast('Organizer sign-in required.'); return; }
+  if (!currentLottery) { toast('Open Mini or Grand Lottery first.'); return; }
+  const amount = Number(input('ticketPriceInput').value);
+  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) { toast('Enter a whole ticket price from 1 to 1,000,000 gold.'); return; }
+  const { error } = await supabase.rpc('admin_set_ticket_price', { p_ticket_price: amount, p_lottery_id: currentLottery });
+  if (error) { await showError(error, 'Could not save ticket price. Run the ticket-price SQL setup in Supabase first.'); return; }
+  toast('Ticket price updated.');
+  input('ticketPriceInput').value = '';
+  await refreshData();
+});
+$('setPrizePoolBtn').addEventListener('click', async () => {
+  if (!isAdmin) return;
+  const amount = Number(input('prizePoolInput').value);
+  if (!Number.isSafeInteger(amount) || amount < 0 || amount > 1000000000) { toast('Enter a valid whole jackpot amount.'); return; }
+  // as before: with no lottery open the call goes out without one and the database refuses it
+  const { error } = await supabase.rpc('admin_set_jackpot', { p_amount: amount, p_lottery_id: currentLottery as string });
+  if (error) { await showError(error); return; }
+  toast('Jackpot updated.');
+  await refreshData();
+});
+$('resetPrizePoolBtn').addEventListener('click', async () => {
+  if (!isAdmin) { toast('Organizer sign-in required.'); return; }
+  if (!currentLottery) { toast('Choose a lottery first.'); return; }
+  const btn = button('resetPrizePoolBtn');
+  btn.disabled = true;
+  try {
+    const { error } = await supabase.rpc('admin_reset_jackpot_to_ticket_total', { p_lottery_id: currentLottery });
+    if (error) { await showError(error); return; }
+    toast('Prize pool reset to ticket sales total.');
+    await refreshData();
+  } finally { btn.disabled = false; }
+});
+async function setSalesOpen(open: boolean) {
+  if (!isAdmin) { toast('Organizer sign-in required.'); return; }
+  const { error } = await supabase.rpc('admin_set_sales_open', { p_open: open, p_lottery_id: currentLottery as string });
+  if (error) { await showError(error); return; }
+  toast(open ? 'Ticket sales opened.' : 'Ticket sales closed.');
+  await refreshData();
+}
+$('openSalesBtn').addEventListener('click', () => setSalesOpen(true)); $('closeSalesBtn').addEventListener('click', () => setSalesOpen(false));
+$('scheduleBtn').addEventListener('click', async () => {
+  if (!isAdmin || !currentLottery) { toast('Choose a lottery and sign in as organizer.'); return; }
+  const raw = input('drawDateInput').value;
+  if (!raw) { toast('Choose a date and time first.'); return; }
+  const utcDate = new Date(raw + 'Z');
+  if (!Number.isFinite(utcDate.getTime()) || utcDate.getTime() <= Date.now()) { toast('Choose a future UTC date and time.'); return; }
+  const { error } = await supabase.rpc('admin_set_draw_time', { p_lottery_id: currentLottery, p_draw_at: utcDate.toISOString() });
+  if (error) { await showError(error, 'Could not save draw time. Run the organizer controls SQL setup first.'); return; }
+  toast('Draw time saved in UTC.');
+  await refreshData();
+});
+$('clearScheduleBtn').addEventListener('click', async () => {
+  if (!isAdmin || !currentLottery) { toast('Choose a lottery and sign in as organizer.'); return; }
+  // null clears the time; the generated types don't mark function arguments as nullable
+  const { error } = await supabase.rpc('admin_set_draw_time', { p_lottery_id: currentLottery, p_draw_at: null as unknown as string });
+  if (error) { await showError(error, 'Could not clear draw time. Run the organizer controls SQL setup first.'); return; }
+  toast('Draw time cleared.');
+  await refreshData();
+});
+$('drawBtn').addEventListener('click', async () => {
+  if (!isAdmin || !currentLottery) { toast('Choose a lottery and sign in as organizer.'); return; }
+  if (!confirm('Randomly draw one winner for this lottery? The jackpot is paid to the winner automatically and a new empty draw starts.')) return;
+  const { error } = await supabase.rpc('admin_close_and_draw', { p_lottery_id: currentLottery });
+  if (error) { await showError(error, 'Could not draw winner. Run the organizer controls SQL setup first.'); return; }
+  toast('Ticket sales closed and winner drawn!');
+  await refreshData();
+});
+$('reopenBtn').addEventListener('click', async () => {
+  if (!isAdmin || !currentLottery) { toast('Choose a lottery and sign in as organizer.'); return; }
+  if (!confirm('Start a new draw for this lottery? Existing winner history and player balances will be kept.')) return;
+  const { error } = await supabase.rpc('admin_reopen_draw', { p_lottery_id: currentLottery });
+  if (error) { await showError(error, 'Could not open the next draw. Run the organizer controls SQL setup first.'); return; }
+  toast('A new draw is open.');
+  await refreshData();
+});
+$('deleteAllTicketsBtn').addEventListener('click', async () => {
+  if (!isAdmin) { toast('Organizer sign-in required.'); return; }
+  if (!confirm('DELETE ALL TICKETS from both Mini and Grand Lottery? Players will NOT be refunded. This cannot be undone. Use this for testing only.')) return;
+  const btn = button('deleteAllTicketsBtn');
+  btn.disabled = true;
+  try {
+    const { error } = await supabase.rpc('admin_delete_all_lottery_tickets');
+    if (error) { await showError(error, 'Could not delete tickets. Run the updated organizer controls SQL setup first.'); return; }
+    toast('All lottery tickets deleted. Player balances and winner history preserved.');
+    await refreshData();
+  } finally { btn.disabled = false; }
+});
+$('resetBtn').addEventListener('click', async () => {
+  if (!isAdmin) { toast('Organizer sign-in required.'); return; }
+  if (!confirm('RESET LOTTERY DATA? This deletes all tickets and winner history and restores the jackpots (Mini 0, Grand 500). Players are NOT refunded for deleted tickets. Player gold balances and deposit/withdrawal records will be preserved. This cannot be undone.')) return;
+  const { error } = await supabase.rpc('admin_reset_lottery_data');
+  if (error) { await showError(error, 'Could not reset data. Run the organizer controls SQL setup first.'); return; }
+  currentLottery = null; settings = null;
+  toast('Lottery tickets and winner history reset. Player balances preserved.');
+  await refreshData();
+});
+$('lookupBtn').addEventListener('click', () => toast('Player lookup needs a secure organizer lookup function to be added in Supabase first.'));
+supabase.auth.onAuthStateChange((_event, newSession) => { session = newSession; setTimeout(() => refreshData(), 0); });
+refreshData().catch((e) => showError(e, 'Could not connect to Supabase. Check the project URL and publishable key.'));
