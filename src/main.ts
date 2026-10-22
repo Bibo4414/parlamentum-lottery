@@ -2,12 +2,13 @@
 import { createClient, type Session } from '@supabase/supabase-js';
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from './config.ts';
 import type { Database, Tables } from './database.types.ts';
+import { verifyDraw } from './verify.ts';
 
 type LotteryId = 'mini' | 'grand';
 type Game = Pick<Tables<'lottery_games'>, 'id' | 'name' | 'jackpot' | 'ticket_price' | 'sales_open' | 'draw_at' | 'current_draw_id'>;
 type Profile = Pick<Tables<'player_profiles'>, 'user_id' | 'username' | 'gold'>;
 type Ticket = Pick<Tables<'lottery_tickets'>, 'id' | 'ticket_number' | 'draw_id' | 'created_at'>;
-type Winner = Pick<Tables<'draw_history'>, 'id' | 'winner_username' | 'prize_gold' | 'drawn_at' | 'lottery_id' | 'ticket_number'>;
+type Winner = Pick<Tables<'draw_history'>, 'id' | 'winner_username' | 'prize_gold' | 'drawn_at' | 'lottery_id' | 'ticket_number' | 'draw_id'>;
 type Deposit = Pick<Tables<'deposit_requests'>, 'id' | 'amount' | 'status' | 'created_at'>;
 type Request = Pick<Tables<'withdrawal_requests'>, 'id' | 'user_id' | 'amount' | 'status' | 'created_at'>;
 type Named = { player_profiles: { username: string } };
@@ -33,7 +34,7 @@ const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '
 
 const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 let session: Session | null = null, profile: Profile | null = null, isAdmin = false, settings: Game | null = null;
-let myTickets: Ticket[] = [], history: Winner[] = [];
+let myTickets: Ticket[] = [], history: Winner[] = [], myWithdrawals: Deposit[] = [], commitment: string | null = null;
 let pendingWithdrawals: (Request & Named)[] = [], auditMessages: (Request & Named & { kind: 'deposit' })[] = [], myDeposits: Deposit[] = [];
 let menuJackpotMini = 0, menuJackpotGrand = 500;
 
@@ -66,7 +67,7 @@ async function refreshData() {
     ? supabase.from('lottery_games').select('id,name,jackpot,ticket_price,sales_open,draw_at,current_draw_id').eq('id', currentLottery).maybeSingle()
     : Promise.resolve({ data: null, error: null });
   const menuGamesPromise = supabase.from('lottery_games').select('id,jackpot,ticket_price');
-  const historyPromise = supabase.from('draw_history').select('id,winner_username,prize_gold,drawn_at,lottery_id,ticket_number').order('drawn_at', { ascending: false }).limit(20);
+  const historyPromise = supabase.from('draw_history').select('id,winner_username,prize_gold,drawn_at,lottery_id,ticket_number,draw_id').order('drawn_at', { ascending: false }).limit(20);
   const profilePromise = session
     ? supabase.from('player_profiles').select('user_id,username,gold').eq('user_id', session.user.id).maybeSingle()
     : Promise.resolve({ data: null, error: null });
@@ -91,10 +92,19 @@ async function refreshData() {
   if (adminResult.error) console.error(adminResult.error);
   history = !historyResult.error ? historyResult.data || [] : [];
   if (historyResult.error) console.error(historyResult.error);
-  myTickets = []; pendingWithdrawals = []; auditMessages = []; myDeposits = [];
+  myTickets = []; pendingWithdrawals = []; auditMessages = []; myDeposits = []; myWithdrawals = []; commitment = null;
   if (session) {
-    const myDep = await supabase.from('deposit_requests').select('id,amount,status,created_at').eq('user_id', session.user.id).eq('status', 'pending').order('created_at');
+    const [myDep, myOut] = await Promise.all([
+      supabase.from('deposit_requests').select('id,amount,status,created_at').eq('user_id', session.user.id).eq('status', 'pending').order('created_at'),
+      supabase.from('withdrawal_requests').select('id,amount,status,created_at').eq('user_id', session.user.id).eq('status', 'pending').order('created_at'),
+    ]);
     if (!myDep.error) myDeposits = myDep.data || []; else console.error(myDep.error);
+    if (!myOut.error) myWithdrawals = myOut.data || []; else console.error(myOut.error);
+  }
+  if (settings?.current_draw_id) {
+    // the open draw's commitment: the SHA-256 of the seed it will be drawn with, published before anyone knows the result
+    const open = await supabase.from('lottery_draws').select('seed_hash').eq('id', settings.current_draw_id).maybeSingle();
+    if (!open.error) commitment = open.data?.seed_hash ?? null; else console.error(open.error);
   }
 
   const ticketsPromise = session && currentLottery && settings?.current_draw_id
@@ -160,7 +170,10 @@ function render() {
   button('requestWithdrawBtn').disabled = !session; button('requestDepositBtn').disabled = !session || myDeposits.length >= 3;
   setText('depositStatus', !session ? 'Log in to request a deposit.' : myDeposits.length >= 3 ? 'You have 3 pending requests. Wait for one to be approved before sending another.' : `You have ${myDeposits.length} of 3 pending requests.`);
   $('myPendingDeposits').innerHTML = myDeposits.map((d) => `<div class="entry"><span>Pending · ${fmt(d.amount)} gold · ${esc(new Date(d.created_at).toLocaleString())}</span><span>Waiting for approval</span></div>`).join('');
-  setText('withdrawStatus', session ? 'Your withdrawal request will be held while I review it.' : 'Log in to request a withdrawal.');
+  setText('withdrawStatus', !session ? 'Log in to request a withdrawal.' : myWithdrawals.length >= 3 ? 'You have 3 withdrawals waiting. Wait for one to be paid before asking for another.' : 'Your withdrawal request will be held while I review it.');
+  button('requestWithdrawBtn').disabled = !session || myWithdrawals.length >= 3;
+  $('myPendingWithdrawals').innerHTML = myWithdrawals.map((w) => `<div class="entry"><span>Waiting · ${fmt(w.amount)} gold · ${esc(new Date(w.created_at).toLocaleString())}</span><span>List Raw Copper for ${fmt(w.amount)} gold</span></div>`).join('');
+  setText('drawCommitment', commitment ? `Seed fingerprint (SHA-256): ${commitment}` : '');
   button('buyBtn').disabled = !session || closed || !currentLottery; $<HTMLSelectElement>('quantity').disabled = !session || closed || !currentLottery;
   $('lotteryMenu').classList.toggle('hidden', !!currentLottery); $('lotteryGameArea').classList.toggle('hidden', !currentLottery);
   $('myTickets').innerHTML = myTickets.length
@@ -170,8 +183,9 @@ function render() {
     ? [...myTickets].reverse().slice(0, 8).map((t) => `<div class="entry"><span>Your ticket</span><span>#${fmt(t.ticket_number)}</span></div>`).join('')
     : '<div class="empty">No visible ticket entries yet.</div>';
   $('pastWinners').innerHTML = history.length
-    ? history.map((d) => `<div class="history-item"><div><strong>Winner: ${esc(d.winner_username || 'Unknown')}</strong></div><div class="hint">${esc(lotteryLabel(d.lottery_id))}${d.ticket_number ? ' · Ticket #' + fmt(d.ticket_number) : ''}</div><div class="hint">Prize: ${fmt(d.prize_gold)} gold · ${esc(d.drawn_at ? new Date(d.drawn_at).toLocaleString() : 'Date unavailable')}</div></div>`).join('')
+    ? history.map((d) => `<div class="history-item"><div><strong>Winner: ${esc(d.winner_username || 'Unknown')}</strong></div><div class="hint">${esc(lotteryLabel(d.lottery_id))}${d.ticket_number ? ' · Ticket #' + fmt(d.ticket_number) : ''}</div><div class="hint">Prize: ${fmt(d.prize_gold)} gold · ${esc(d.drawn_at ? new Date(d.drawn_at).toLocaleString() : 'Date unavailable')}</div>${d.draw_id ? `<button class="btn secondary" type="button" data-check-draw="${d.draw_id}">Check this draw</button><div class="verify" data-verdict="${d.draw_id}"></div>` : ''}</div>`).join('')
     : '<div class="empty">No completed draws yet.</div>';
+  $('pastWinners').querySelectorAll<HTMLElement>('[data-check-draw]').forEach((b) => b.addEventListener('click', () => checkDraw(Number(b.dataset.checkDraw))));
   const latest = history[0];
   $('winnerDisplay').innerHTML = latest
     ? `<div class="winner"><div class="eyebrow">Most recent winner</div><strong>${esc(latest.winner_username || 'Unknown')}</strong><div class="hint">${esc(lotteryLabel(latest.lottery_id))}${latest.ticket_number ? ' · Ticket #' + fmt(latest.ticket_number) : ''}</div><div class="hint">Prize: ${fmt(latest.prize_gold)} gold (paid automatically)</div></div>`
@@ -197,6 +211,22 @@ function render() {
   button('scheduleBtn').disabled = !isAdmin || !currentLottery; button('clearScheduleBtn').disabled = !isAdmin || !currentLottery;
   button('openSalesBtn').disabled = !isAdmin || !currentLottery; button('closeSalesBtn').disabled = !isAdmin || !currentLottery;
   if (settings?.draw_at) { const d = new Date(settings.draw_at); input('drawDateInput').value = d.toISOString().slice(0, 16); } else input('drawDateInput').value = '';
+}
+
+/** Re-does a finished draw in the browser from what was published, and says whether it holds up. */
+async function checkDraw(drawId: number) {
+  const out = $('pastWinners').querySelector<HTMLElement>(`[data-verdict="${drawId}"]`);
+  if (!out) return;
+  out.textContent = 'Checking…';
+  const [draw, entries] = await Promise.all([
+    supabase.from('lottery_draws').select('id,seed_hash,seed,tickets_digest,ticket_count,winning_index,winning_ticket').eq('id', drawId).maybeSingle(),
+    supabase.rpc('draw_tickets', { p_draw_id: drawId }),
+  ]);
+  if (draw.error || entries.error || !draw.data) { out.textContent = 'This draw couldn’t be loaded.'; return; }
+  const verdict = await verifyDraw(draw.data, entries.data ?? []);
+  out.innerHTML = `<strong class="${verdict.ok ? 'ok' : 'bad'}">${verdict.ok ? `Checked: ticket #${fmt(verdict.ticket)} (${esc(verdict.winner)}) won fairly.` : 'This draw does not check out.'}</strong>`
+    + `<ul>${verdict.checks.map((c) => `<li class="${c.ok ? 'ok' : 'bad'}">${c.ok ? '✓' : '✗'} ${esc(c.label)}</li>`).join('')}</ul>`
+    + (draw.data.seed ? `<div class="commitment">Seed: ${esc(draw.data.seed)}<br>Fingerprint: ${esc(draw.data.seed_hash)}</div>` : '');
 }
 
 const messageOf = (error: unknown) => (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message : '');
@@ -401,23 +431,23 @@ $('reopenBtn').addEventListener('click', async () => {
 });
 $('deleteAllTicketsBtn').addEventListener('click', async () => {
   if (!isAdmin) { toast('Organizer sign-in required.'); return; }
-  if (!confirm('DELETE ALL TICKETS from both Mini and Grand Lottery? Players will NOT be refunded. This cannot be undone. Use this for testing only.')) return;
+  if (!confirm('Cancel every ticket in both open draws? Each player gets back what they paid, price and fee, and the ticket money leaves the pools. Past winners are kept.')) return;
   const btn = button('deleteAllTicketsBtn');
   btn.disabled = true;
   try {
     const { error } = await supabase.rpc('admin_delete_all_lottery_tickets');
     if (error) { await showError(error, 'Could not delete tickets. Run the updated organizer controls SQL setup first.'); return; }
-    toast('All lottery tickets deleted. Player balances and winner history preserved.');
+    toast('All open tickets cancelled and refunded. Past winners kept.');
     await refreshData();
   } finally { btn.disabled = false; }
 });
 $('resetBtn').addEventListener('click', async () => {
   if (!isAdmin) { toast('Organizer sign-in required.'); return; }
-  if (!confirm('RESET LOTTERY DATA? This deletes all tickets and winner history and restores the jackpots (Mini 0, Grand 500). Players are NOT refunded for deleted tickets. Player gold balances and deposit/withdrawal records will be preserved. This cannot be undone.')) return;
+  if (!confirm('Restart both draws? Every ticket in them is refunded, price and fee, and fresh draws start at the seed (Mini 0, Grand 500). Past winners are kept.')) return;
   const { error } = await supabase.rpc('admin_reset_lottery_data');
   if (error) { await showError(error, 'Could not reset data. Run the organizer controls SQL setup first.'); return; }
   currentLottery = null; settings = null;
-  toast('Lottery tickets and winner history reset. Player balances preserved.');
+  toast('Both draws restarted. Tickets refunded, past winners kept.');
   await refreshData();
 });
 $('lookupBtn').addEventListener('click', () => toast('Player lookup needs a secure organizer lookup function to be added in Supabase first.'));
