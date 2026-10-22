@@ -7,6 +7,7 @@ export type Database = {
         Row: {
           amount: number;
           created_at: string;
+          game_sale: string | null;
           id: number;
           processed_at: string | null;
           processed_by: string | null;
@@ -16,6 +17,7 @@ export type Database = {
         Insert: {
           amount: number;
           created_at?: string;
+          game_sale?: string | null;
           id?: never;
           processed_at?: string | null;
           processed_by?: string | null;
@@ -25,6 +27,7 @@ export type Database = {
         Update: {
           amount?: number;
           created_at?: string;
+          game_sale?: string | null;
           id?: never;
           processed_at?: string | null;
           processed_by?: string | null;
@@ -32,6 +35,13 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "deposit_requests_game_sale_fkey";
+            columns: ["game_sale"];
+            isOneToOne: false;
+            referencedRelation: "game_sales";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "deposit_requests_user_id_fkey";
             columns: ["user_id"];
@@ -96,11 +106,78 @@ export type Database = {
           },
         ];
       };
+      game_sales: {
+        Row: {
+          at: string;
+          deposit_request_id: number | null;
+          gold: number;
+          gross_cents: number;
+          id: string;
+          kind: string;
+          name: string;
+          reason: string | null;
+          seen_at: string;
+          settled_at: string | null;
+          state: string;
+          tax_cents: number;
+          units: number | null;
+          user_id: string | null;
+        };
+        Insert: {
+          at: string;
+          deposit_request_id?: number | null;
+          gold: number;
+          gross_cents: number;
+          id: string;
+          kind: string;
+          name: string;
+          reason?: string | null;
+          seen_at?: string;
+          settled_at?: string | null;
+          state?: string;
+          tax_cents?: number;
+          units?: number | null;
+          user_id?: string | null;
+        };
+        Update: {
+          at?: string;
+          deposit_request_id?: number | null;
+          gold?: number;
+          gross_cents?: number;
+          id?: string;
+          kind?: string;
+          name?: string;
+          reason?: string | null;
+          seen_at?: string;
+          settled_at?: string | null;
+          state?: string;
+          tax_cents?: number;
+          units?: number | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "game_sales_deposit_request_id_fkey";
+            columns: ["deposit_request_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_requests";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "game_sales_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "player_profiles";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
       gold_moves: {
         Row: {
           actor: string | null;
           created_at: string;
           delta: number;
+          game_sale: string | null;
           id: number;
           kind: string;
           note: string | null;
@@ -111,6 +188,7 @@ export type Database = {
           actor?: string | null;
           created_at?: string;
           delta: number;
+          game_sale?: string | null;
           id?: never;
           kind: string;
           note?: string | null;
@@ -121,6 +199,7 @@ export type Database = {
           actor?: string | null;
           created_at?: string;
           delta?: number;
+          game_sale?: string | null;
           id?: never;
           kind?: string;
           note?: string | null;
@@ -128,6 +207,13 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "gold_moves_game_sale_fkey";
+            columns: ["game_sale"];
+            isOneToOne: false;
+            referencedRelation: "game_sales";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "gold_moves_user_id_fkey";
             columns: ["user_id"];
@@ -268,6 +354,42 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      lottery_settings: {
+        Row: {
+          deposit_item: string;
+          deposit_item_label: string;
+          deposit_price_cents: number;
+          deposit_tier: string | null;
+          export_tax_pct: number;
+          house_name: string;
+          id: number;
+          import_tax_pct: number;
+          updated_at: string;
+        };
+        Insert: {
+          deposit_item?: string;
+          deposit_item_label?: string;
+          deposit_price_cents?: number;
+          deposit_tier?: string | null;
+          export_tax_pct?: number;
+          house_name?: string;
+          id?: number;
+          import_tax_pct?: number;
+          updated_at?: string;
+        };
+        Update: {
+          deposit_item?: string;
+          deposit_item_label?: string;
+          deposit_price_cents?: number;
+          deposit_tier?: string | null;
+          export_tax_pct?: number;
+          house_name?: string;
+          id?: number;
+          import_tax_pct?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       lottery_tickets: {
         Row: {
@@ -410,6 +532,45 @@ export type Database = {
           },
         ];
       };
+      watcher_state: {
+        Row: {
+          checked_at: string | null;
+          error: string | null;
+          house_id: string | null;
+          id: number;
+          listing: Json | null;
+          ok_at: string | null;
+          since: string | null;
+          token_exp: string | null;
+          token_sealed: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          checked_at?: string | null;
+          error?: string | null;
+          house_id?: string | null;
+          id?: number;
+          listing?: Json | null;
+          ok_at?: string | null;
+          since?: string | null;
+          token_exp?: string | null;
+          token_sealed?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          checked_at?: string | null;
+          error?: string | null;
+          house_id?: string | null;
+          id?: number;
+          listing?: Json | null;
+          ok_at?: string | null;
+          since?: string | null;
+          token_exp?: string | null;
+          token_sealed?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       withdrawal_requests: {
         Row: {
           amount: number;
@@ -464,15 +625,28 @@ export type Database = {
       admin_credit_gold: { Args: { p_amount: number; p_username: string }; Returns: number };
       admin_delete_all_lottery_tickets: { Args: Record<PropertyKey, never>; Returns: number };
       admin_get_fee_earnings: { Args: Record<PropertyKey, never>; Returns: number };
-      admin_process_deposit: { Args: { p_approve: boolean; p_request_id: number }; Returns: undefined };
+      admin_process_deposit: { Args: { p_approve: boolean; p_force?: boolean; p_request_id: number }; Returns: string };
       admin_process_withdrawal: { Args: { p_approve: boolean; p_request_id: number }; Returns: undefined };
       admin_reopen_draw: { Args: { p_lottery_id: string }; Returns: number };
       admin_reset_jackpot_to_ticket_total: { Args: { p_lottery_id: string }; Returns: number };
       admin_reset_lottery_data: { Args: Record<PropertyKey, never>; Returns: undefined };
+      admin_set_deposit_terms: {
+        Args: {
+          p_export_tax_pct: number;
+          p_house_name: string;
+          p_import_tax_pct: number;
+          p_item: string;
+          p_item_label: string;
+          p_price_cents: number;
+          p_tier: string;
+        };
+        Returns: undefined;
+      };
       admin_set_draw_time: { Args: { p_draw_at: string; p_lottery_id: string }; Returns: undefined };
       admin_set_jackpot: { Args: { p_amount: number; p_lottery_id: string }; Returns: undefined };
       admin_set_sales_open: { Args: { p_lottery_id: string; p_open: boolean }; Returns: undefined };
       admin_set_ticket_price: { Args: { p_lottery_id: string; p_ticket_price: number }; Returns: undefined };
+      admin_watcher_status: { Args: Record<PropertyKey, never>; Returns: Json };
       buy_lottery_tickets: {
         Args: { p_lottery_id: string; p_quantity: number };
         Returns: {
@@ -480,6 +654,7 @@ export type Database = {
           ticket_number: number;
         }[];
       };
+      deposit_info: { Args: Record<PropertyKey, never>; Returns: Json };
       draw_tickets: {
         Args: { p_draw_id: number };
         Returns: {
@@ -497,7 +672,14 @@ export type Database = {
       };
       is_lottery_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       move_gold: {
-        Args: { p_delta: number; p_kind: string; p_note?: string; p_ref?: string; p_user: string };
+        Args: {
+          p_delta: number;
+          p_game_sale?: string;
+          p_kind: string;
+          p_note?: string;
+          p_ref?: string;
+          p_user: string;
+        };
         Returns: number;
       };
       open_draw: { Args: { p_lottery_id: string }; Returns: number };
@@ -505,6 +687,25 @@ export type Database = {
       request_lottery_deposit: { Args: { p_amount: number }; Returns: number };
       request_lottery_withdrawal: { Args: { p_amount: number }; Returns: number };
       require_lottery_admin: { Args: Record<PropertyKey, never>; Returns: undefined };
+      settle_game_sale: {
+        Args: { p_request?: number; p_sale: Database["public"]["Tables"]["game_sales"]["Row"] };
+        Returns: string;
+      };
+      watcher_claim: {
+        Args: { p_force: boolean };
+        Returns: {
+          export_tax_pct: number;
+          house_id: string;
+          item: string;
+          price_cents: number;
+          tier: string;
+          token_sealed: string;
+        }[];
+      };
+      watcher_fail: { Args: { p_error: string }; Returns: undefined };
+      watcher_live: { Args: Record<PropertyKey, never>; Returns: boolean };
+      watcher_record: { Args: { p_house_id: string; p_listing: Json; p_sales: Json }; Returns: Json };
+      watcher_set_login: { Args: { p_exp: string; p_sealed: string }; Returns: undefined };
     };
     Enums: {
       [_ in never]: never;
