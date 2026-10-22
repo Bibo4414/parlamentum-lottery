@@ -1,0 +1,19 @@
+{
+  "name": "parlamentum-lottery",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.2"
+  },
+  "devDependencies": {
+    "prettier": "3.9.9",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  }
+}
