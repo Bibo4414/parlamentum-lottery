@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
-import { LIVE_SUPABASE_URL } from './src/project.ts';
+import { LIVE_SUPABASE_URL } from './src/lib/project.ts';
 
 /** The built page may run only its own scripts and talk only to its Supabase project. GitHub Pages can't send
  *  headers, so the policy rides in a meta tag; dev builds go without it so live reload keeps working. */

@@ -1,7 +1,7 @@
 // The security pass: the gold ledger, refunds instead of lost gold, the pool floor, the limits, and draws anyone can
 // check. Each test states what must hold and checks it through the same API the page uses.
 import { describe, expect, it } from 'vitest';
-import { verifyDraw, winningIndex, type DrawRecord } from '../src/verify.ts';
+import { verifyDraw, winningIndex, type DrawRecord } from '../src/lib/verify.ts';
 import { anon, game, gold, must, ok, organizer, player, pool, service } from './helpers.ts';
 
 const ledgerSum = async (userId: string) =>

@@ -1,8 +1,8 @@
 // The lottery page: what used to be index.html's inline script, now typed. Same behaviour, same Supabase calls.
 import { createClient, type Session } from '@supabase/supabase-js';
-import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from './config.ts';
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from './lib/config.ts';
 import type { Database, Tables } from './database.types.ts';
-import { verifyDraw } from './verify.ts';
+import { verifyDraw } from './lib/verify.ts';
 
 type LotteryId = 'mini' | 'grand';
 type Game = Pick<Tables<'lottery_games'>, 'id' | 'name' | 'jackpot' | 'ticket_price' | 'sales_open' | 'draw_at' | 'current_draw_id'>;
