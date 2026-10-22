@@ -12,6 +12,11 @@ type Winner = Pick<Tables<'draw_history'>, 'id' | 'winner_username' | 'prize_gol
 type Deposit = Pick<Tables<'deposit_requests'>, 'id' | 'amount' | 'status' | 'created_at'>;
 type Request = Pick<Tables<'withdrawal_requests'>, 'id' | 'user_id' | 'amount' | 'status' | 'created_at'>;
 type Named = { player_profiles: { username: string } };
+/** The deposit terms everyone sees (deposit_info), and whether the watcher credits deposits by itself right now. */
+type DepositInfo = { house_name: string; item: string; item_label: string; tier: string | null; price_cents: number; export_tax_pct: number; import_tax_pct: number; automatic: boolean };
+type WatchSale = { id: string; kind: 'market' | 'contract'; at: string; units: number | null; gross_cents: number; tax_cents: number; gold: number; name: string; state: 'open' | 'deposit' | 'other'; reason: string | null };
+/** The organizer's view of the watcher (admin_watcher_status): never the login itself. */
+type WatchView = { on: boolean; error: string | null; ok_at: string | null; login_ends: string | null; since: string | null; listing: { remaining: number; endsAt: string } | null; sales: WatchSale[] };
 
 const LOTTERIES: Record<LotteryId, { name: string; jackpot: number; ticketPrice: number }> = {
   mini: { name: 'Mini Lottery', jackpot: 0, ticketPrice: 10 },
@@ -37,6 +42,7 @@ let session: Session | null = null, profile: Profile | null = null, isAdmin = fa
 let myTickets: Ticket[] = [], history: Winner[] = [], myWithdrawals: Deposit[] = [], commitment: string | null = null;
 let pendingWithdrawals: (Request & Named)[] = [], auditMessages: (Request & Named & { kind: 'deposit' })[] = [], myDeposits: Deposit[] = [];
 let menuJackpotMini = 0, menuJackpotGrand = 500;
+let depositInfo: DepositInfo | null = null, watchView: WatchView | null = null;
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 function toast(msg: string) {
@@ -100,6 +106,13 @@ async function refreshData() {
     ]);
     if (!myDep.error) myDeposits = myDep.data || []; else console.error(myDep.error);
     if (!myOut.error) myWithdrawals = myOut.data || []; else console.error(myOut.error);
+  }
+  const terms = await supabase.rpc('deposit_info');
+  if (!terms.error) depositInfo = terms.data as DepositInfo | null; else console.error(terms.error);
+  watchView = null;
+  if (isAdmin) {
+    const view = await supabase.rpc('admin_watcher_status');
+    if (!view.error) watchView = view.data as WatchView | null; else console.error(view.error);
   }
   if (settings?.current_draw_id) {
     // the open draw's commitment: the SHA-256 of the seed it will be drawn with, published before anyone knows the result
@@ -172,8 +185,9 @@ function render() {
   $('myPendingDeposits').innerHTML = myDeposits.map((d) => `<div class="entry"><span>Pending · ${fmt(d.amount)} gold · ${esc(new Date(d.created_at).toLocaleString())}</span><span>Waiting for approval</span></div>`).join('');
   setText('withdrawStatus', !session ? 'Log in to request a withdrawal.' : myWithdrawals.length >= 3 ? 'You have 3 withdrawals waiting. Wait for one to be paid before asking for another.' : 'Your withdrawal request will be held while I review it.');
   button('requestWithdrawBtn').disabled = !session || myWithdrawals.length >= 3;
-  $('myPendingWithdrawals').innerHTML = myWithdrawals.map((w) => `<div class="entry"><span>Waiting · ${fmt(w.amount)} gold · ${esc(new Date(w.created_at).toLocaleString())}</span><span>List Raw Copper for ${fmt(w.amount)} gold</span></div>`).join('');
+  $('myPendingWithdrawals').innerHTML = myWithdrawals.map((w) => `<div class="entry"><span>Waiting · ${fmt(w.amount)} gold · ${esc(new Date(w.created_at).toLocaleString())}</span><span>${esc(listInstruction(w.amount))}</span></div>`).join('');
   setText('drawCommitment', commitment ? `Seed fingerprint (SHA-256): ${commitment}` : '');
+  renderDepositTerms();
   button('buyBtn').disabled = !session || closed || !currentLottery; $<HTMLSelectElement>('quantity').disabled = !session || closed || !currentLottery;
   $('lotteryMenu').classList.toggle('hidden', !!currentLottery); $('lotteryGameArea').classList.toggle('hidden', !currentLottery);
   $('myTickets').innerHTML = myTickets.length
@@ -194,9 +208,10 @@ function render() {
   $('drawDateLabel').textContent = settings?.draw_at ? 'Scheduled for ' + new Date(settings.draw_at).toLocaleString() : 'I haven’t set a draw time yet.';
   $('adminProtectedControls').classList.toggle('hidden', !isAdmin); $('unlockAdminBtn').classList.toggle('hidden', isAdmin); $('lockAdminBtn').classList.toggle('hidden', !isAdmin);
   $('adminCode').closest('.field')?.classList.add('hidden');
+  if (isAdmin) renderWatcher();
   if (isAdmin) {
     $('pendingWithdrawalsList').innerHTML = pendingWithdrawals.length
-      ? pendingWithdrawals.map((w) => `<div class="pending-withdrawal"><strong>${esc(w.player_profiles?.username || 'Player')}</strong> requested <strong>${fmt(w.amount)} gold</strong><div class="hint">Request #${w.id} · ${esc(new Date(w.created_at).toLocaleString())}</div><div class="hint">Tell the player: List Raw Copper for ${fmt(w.amount)} gold on the global market.</div><div class="pending-actions"><button class="btn goldbtn" data-withdraw="${w.id}" data-approve="true">Mark completed</button><button class="btn secondary" data-withdraw="${w.id}" data-approve="false">Reject & refund</button></div></div>`).join('')
+      ? pendingWithdrawals.map((w) => `<div class="pending-withdrawal"><strong>${esc(w.player_profiles?.username || 'Player')}</strong> requested <strong>${fmt(w.amount)} gold</strong><div class="hint">Request #${w.id} · ${esc(new Date(w.created_at).toLocaleString())}</div><div class="hint">Tell the player: ${esc(listInstruction(w.amount))} on the global market.</div><div class="pending-actions"><button class="btn goldbtn" data-withdraw="${w.id}" data-approve="true">Mark completed</button><button class="btn secondary" data-withdraw="${w.id}" data-approve="false">Reject & refund</button></div></div>`).join('')
       : '<div class="empty">No pending withdrawals. If requests exist but are not shown, run the admin read-policy SQL I provide separately.</div>';
     $('pendingWithdrawalsList').querySelectorAll<HTMLElement>('[data-withdraw]').forEach((b) => b.addEventListener('click', () => processWithdrawal(Number(b.dataset.withdraw), b.dataset.approve === 'true')));
     $('auditLog').innerHTML = auditMessages.length
@@ -227,6 +242,107 @@ async function checkDraw(drawId: number) {
   out.innerHTML = `<strong class="${verdict.ok ? 'ok' : 'bad'}">${verdict.ok ? `Checked: ticket #${fmt(verdict.ticket)} (${esc(verdict.winner)}) won fairly.` : 'This draw does not check out.'}</strong>`
     + `<ul>${verdict.checks.map((c) => `<li class="${c.ok ? 'ok' : 'bad'}">${c.ok ? '✓' : '✗'} ${esc(c.label)}</li>`).join('')}</ul>`
     + (draw.data.seed ? `<div class="commitment">Seed: ${esc(draw.data.seed)}<br>Fingerprint: ${esc(draw.data.seed_hash)}</div>` : '');
+}
+
+// ---------- deposits, withdrawals and the watcher ----------
+
+const goldOf = (cents: number) => (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** What 100 units at the deposit price credit: the House's receipts after its export tax, in whole gold. */
+function creditFor100(info: DepositInfo) {
+  const gross = 100 * info.price_cents, tax = info.export_tax_pct > 0 ? Math.max(1, Math.floor((gross * info.export_tax_pct) / 100)) : 0;
+  return Math.floor((gross - tax) / 100);
+}
+/** A withdrawal of `amount` gold: the player lists one unit at amount ÷ (1 + the House's import tax), so the House
+ *  pays the amount in all, tax included. */
+function listInstruction(amount: number) {
+  const label = depositInfo?.item_label ?? 'Raw Copper', tax = depositInfo?.import_tax_pct ?? 0;
+  return `List 1 ${label} for ${goldOf(Math.floor((amount * 10000) / (100 + tax)))} gold`;
+}
+
+function renderDepositTerms() {
+  const info = depositInfo;
+  if (!info) return;
+  const price = goldOf(info.price_cents), item = `${info.item_label}${info.tier ? ` (${info.tier})` : ''}`;
+  setText('depositHow', `Buy ${item} from ${info.house_name} on the global market at ${price} gold a unit. You're credited what ${info.house_name} receives after the game's tax, in whole gold: 100 units make ${fmt(creditFor100(info))} gold.`);
+  setText('depositAfter', info.automatic
+    ? 'Deposits are credited automatically within a few minutes, to the lottery account with your Parlamentum name. Telling us the amount below is optional.'
+    : 'After you buy, enter the same amount below. I\'ll check the trade and approve it, and the gold is added to your balance. You can have up to 3 pending requests at a time.');
+  if (document.activeElement?.closest('.watcher-terms')) return;
+  input('termHouse').value = info.house_name; input('termLabel').value = info.item_label; input('termItem').value = info.item;
+  input('termTier').value = info.tier ?? ''; input('termPrice').value = (info.price_cents / 100).toFixed(2);
+  input('termExport').value = String(info.export_tax_pct); input('termImport').value = String(info.import_tax_pct);
+  setText('termEffect', `At these terms 100 units credit ${fmt(creditFor100(info))} gold; a withdrawal of 100 is listed at ${listInstruction(100).replace(/^List 1 .* for /, '')}.`);
+}
+
+const utc = (iso: string) => iso.slice(0, 16).replace('T', ' ') + ' UTC';
+const ago = (iso: string) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60_000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
+
+/** What needs the organizer: a login about to run out, a deposit listing low, ending or gone, or no good look lately. */
+function watcherWarnings(view: WatchView, info: DepositInfo | null): string[] {
+  const out: string[] = [], now = Date.now();
+  if (!view.on) return out;
+  if (view.login_ends) {
+    const ends = Date.parse(view.login_ends);
+    if (ends <= now) out.push('The game login has run out: paste a fresh one.');
+    else if (ends - now < 2 * 86_400_000) out.push(`The game login runs out ${utc(view.login_ends)}: paste a fresh one before then.`);
+  }
+  if (view.ok_at && !view.error) {
+    if (!view.listing) out.push(`No ${info?.item_label ?? 'deposit item'} listed at ${info ? goldOf(info.price_cents) : 'the deposit price'}: players can't deposit until you list some.`);
+    else {
+      if (view.listing.remaining < 200) out.push(`Only ${fmt(view.listing.remaining)} left on the deposit listing.`);
+      if (Date.parse(view.listing.endsAt) - now < 12 * 3_600_000) out.push(`The deposit listing ends ${utc(view.listing.endsAt)}.`);
+    }
+  }
+  if (view.ok_at && now - Date.parse(view.ok_at) > 3_600_000) out.push(`No good look at the game since ${utc(view.ok_at)}.`);
+  return out;
+}
+
+function renderWatcher() {
+  const view = watchView;
+  if (!view) return;
+  const badge = $('watcherBadge');
+  badge.textContent = view.on ? (view.error ? 'On, failing' : 'On') : 'Off';
+  badge.className = `watcher-badge ${view.on ? (view.error ? 'bad' : 'on') : ''}`;
+  $('watcherFacts').innerHTML = view.on
+    ? [['Last good look', view.ok_at ? ago(view.ok_at) : 'not yet'], ['Login runs out', view.login_ends ? utc(view.login_ends) : 'unknown'],
+       ['Deposit listing', view.listing ? `${fmt(view.listing.remaining)} left` : 'none seen'], ['Crediting since', view.since ? utc(view.since) : '–']]
+      .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')
+    : '';
+  $('watcherError').classList.toggle('hidden', !view.error);
+  setText('watcherError', view.error ?? '');
+  $('watcherWarnings').innerHTML = watcherWarnings(view, depositInfo).map((w) => `<li>${esc(w)}</li>`).join('');
+  setText('watcherTokenLabel', view.on ? 'Replace the game login' : 'House game login');
+  setText('watcherLoginBtn', view.on ? 'Save new login' : 'Turn the watcher on');
+  $('watcherLookBtn').classList.toggle('hidden', !view.on); $('watcherStopBtn').classList.toggle('hidden', !view.on);
+  const label = depositInfo?.item_label ?? 'Raw Copper';
+  $('watcherSales').innerHTML = view.sales.length
+    ? view.sales.map((s) => {
+        const what = s.kind === 'market' ? `bought ${fmt(s.units)} ${label} for ${goldOf(s.gross_cents)}` : `sent ${goldOf(s.gross_cents)} by contract`;
+        const state = s.state === 'deposit' ? (s.reason === 'paid by hand' ? 'Already paid by hand' : `Credited +${fmt(s.gold)}`) : s.state === 'open' ? 'Waiting' : `Not a deposit: ${s.reason ?? 'unknown'}`;
+        return `<div class="entry"><span><strong>${esc(s.name)}</strong> ${esc(what)} · ${esc(utc(s.at))}</span><span>${esc(state)}</span></div>`;
+      }).join('')
+    : '<div class="empty">Nothing yet.</div>';
+}
+
+/** Calls the watcher's edge function with the signed-in user's session. */
+async function watcher(action: string, extra: Record<string, unknown> = {}): Promise<{ message?: string; looked?: boolean } | null> {
+  const { data, error } = await supabase.functions.invoke('watcher', { body: { action, ...extra } });
+  if (!error) return data as { message?: string; looked?: boolean };
+  const res = (error as { context?: Response }).context;
+  const body = res ? ((await res.json().catch(() => ({}))) as { error?: string }) : {};
+  toast(body.error || 'The watcher couldn’t be reached.');
+  return null;
+}
+
+/** Each page load gives the watcher a chance to look (it looks at most once a minute anyway). */
+async function nudgeWatcher() {
+  try {
+    const last = Number(localStorage.getItem('watcherNudge') || 0);
+    if (Date.now() - last < 60_000) return;
+    localStorage.setItem('watcherNudge', String(Date.now()));
+  } catch { /* no storage: nudge anyway */ }
+  const { data } = await supabase.functions.invoke('watcher', { body: { action: 'tick' } });
+  if ((data as { looked?: boolean } | null)?.looked) await refreshData();
 }
 
 const messageOf = (error: unknown) => (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message : '');
@@ -273,8 +389,12 @@ async function processWithdrawal(id: number, approve: boolean) {
   toast(approve ? 'Withdrawal marked completed.' : 'Withdrawal rejected and refunded.');
   await refreshData();
 }
-async function processDeposit(id: number, approve: boolean) {
-  const { error } = await supabase.rpc('admin_process_deposit', { p_request_id: id, p_approve: approve });
+async function processDeposit(id: number, approve: boolean, force = false) {
+  const { error } = await supabase.rpc('admin_process_deposit', { p_request_id: id, p_approve: approve, p_force: force });
+  if (error?.message.startsWith('NO_TRADE: ')) {
+    if (confirm(error.message.slice('NO_TRADE: '.length))) await processDeposit(id, approve, true);
+    return;
+  }
   if (error) { await showError(error); return; }
   toast(approve ? 'Deposit approved and gold added.' : 'Deposit rejected.');
   await refreshData();
@@ -300,7 +420,7 @@ $('requestWithdrawBtn').addEventListener('click', async () => {
   const { error } = await supabase.rpc('request_lottery_withdrawal', { p_amount: amount });
   if (error) { await showError(error); return; }
   input('withdrawAmount').value = '';
-  toast(`Withdrawal requested. List Raw Copper for ${fmt(amount)} gold on the global market.`);
+  toast(`Withdrawal requested. ${listInstruction(amount)} on the global market.`);
   await refreshData();
 });
 $('requestDepositBtn').addEventListener('click', async () => {
@@ -450,6 +570,34 @@ $('resetBtn').addEventListener('click', async () => {
   toast('Both draws restarted. Tickets refunded, past winners kept.');
   await refreshData();
 });
+$('watcherLoginBtn').addEventListener('click', async () => {
+  const token = input('watcherToken').value.trim();
+  if (!token) { toast('Paste the House’s game login first.'); return; }
+  const done = await watcher('login', { token });
+  input('watcherToken').value = '';
+  if (done?.message) toast(done.message);
+  await refreshData();
+});
+$('watcherLookBtn').addEventListener('click', async () => { const done = await watcher('look'); if (done) toast('Looked at the game.'); await refreshData(); });
+$('watcherStopBtn').addEventListener('click', async () => {
+  if (!confirm('Turn the watcher off? Its login is forgotten and deposits are approved by hand again.')) return;
+  const done = await watcher('stop');
+  if (done?.message) toast(done.message);
+  await refreshData();
+});
+$('saveTermsBtn').addEventListener('click', async () => {
+  const price = Math.round(Number(input('termPrice').value) * 100), exportTax = Number(input('termExport').value), importTax = Number(input('termImport').value);
+  if (!Number.isSafeInteger(price) || price < 1) { toast('Enter a deposit price such as 1.12.'); return; }
+  const { error } = await supabase.rpc('admin_set_deposit_terms', {
+    p_house_name: input('termHouse').value, p_item: input('termItem').value, p_item_label: input('termLabel').value, p_tier: input('termTier').value,
+    p_price_cents: price, p_export_tax_pct: exportTax, p_import_tax_pct: importTax,
+  });
+  if (error) { await showError(error, 'Check the terms: item codes are like COPPER_RAW, taxes 0 to 50%.'); return; }
+  toast('Deposit terms saved.');
+  await refreshData();
+});
 $('lookupBtn').addEventListener('click', () => toast('Player lookup needs a secure organizer lookup function to be added in Supabase first.'));
 supabase.auth.onAuthStateChange((_event, newSession) => { session = newSession; setTimeout(() => refreshData(), 0); });
-refreshData().catch((e) => showError(e, 'Could not connect to Supabase. Check the project URL and publishable key.'));
+refreshData()
+  .then(() => (session ? nudgeWatcher() : undefined))
+  .catch((e) => showError(e, 'Could not connect to Supabase. Check the project URL and publishable key.'));
