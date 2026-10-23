@@ -43,7 +43,7 @@ export async function verifyDraw(draw: DrawRecord, entries: Entry[]): Promise<Ve
   const picked = sorted[index] ?? null;
   const checks: Check[] = [
     { label: 'The seed matches the fingerprint shown before the draw', ok: (await sha256(draw.seed)) === draw.seed_hash },
-    { label: `The ${sorted.length} tickets are the ones the draw used`, ok: digest === draw.tickets_digest && sorted.length === draw.ticket_count },
+    { label: 'The ticket list is the one the draw used', ok: digest === draw.tickets_digest && sorted.length === draw.ticket_count },
     { label: `Seed and tickets pick ticket #${picked?.ticket_number ?? '?'}`, ok: index === draw.winning_index && picked?.ticket_number === draw.winning_ticket },
   ];
   return { ok: checks.every((c) => c.ok), checks, ticket: picked?.ticket_number ?? null, winner: picked?.username ?? null };
