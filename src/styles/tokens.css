@@ -1,0 +1,88 @@
+/* The lottery's design tokens: the game's own palette and type (parlamentum.org), named by role.
+   Every colour, size and space in the components comes from here. */
+:root {
+  color-scheme: dark;
+
+  /* grounds, darkest first */
+  --rail: #060a12;          /* top bar, tab bar */
+  --ground: #070b14;        /* the page */
+  --surface: #0a101c;       /* cards and panels */
+  --surface-2: #0f1828;     /* inputs, hovered rows, raised controls */
+  --surface-3: #16213a;     /* pressed, selected */
+  --scrollbar: #26324a;
+
+  /* lines */
+  --line: rgba(201, 151, 28, 0.25);        /* the game's gold hairline */
+  --line-strong: rgba(227, 179, 65, 0.55);
+  --line-focal: rgba(227, 179, 65, 0.4);   /* the pools: the dashboard's focal panels */
+  --line-soft: rgba(148, 163, 184, 0.14);  /* rules inside a card */
+  --control-edge: #2a3550;  /* quiet edges: a quiet badge, a proof with no seed or still checking */
+  --field-edge: #5b6884;    /* a field's edge: 3.4:1 against a panel, so a field can be found by its outline */
+  --field-edge-hover: #7a89a6;
+
+  /* text */
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;    /* 7:1 on --surface */
+  --text-faint: #7f8da3;    /* placeholders, disabled, refunded: 5.3:1 on --surface-2 */
+
+  /* gold: the one accent, for money, primary actions and the current place */
+  --gold: #e3b341;
+  --gold-lit: #f0c75a;      /* gold catching light: the top of the primary button, hovered links */
+  --gold-deep: #c9971c;
+  --gold-bright: #f6d374;   /* the primary button's hover gradient, top to bottom */
+  --gold-warm: #d6a42a;
+  --gold-ink: #161006;      /* text on gold */
+  --gold-wash: rgba(227, 179, 65, 0.14);
+  --gold-select: rgba(227, 179, 65, 0.35); /* selected text */
+
+  /* states, only where they carry meaning */
+  --credit: #4ade80;        /* gold in, success */
+  --credit-wash: rgba(74, 222, 128, 0.12);
+  --credit-edge: rgba(74, 222, 128, 0.35);
+  --danger: #f87171;        /* errors, destructive */
+  --danger-wash: rgba(248, 113, 113, 0.12);
+  --danger-edge: rgba(248, 113, 113, 0.4);
+  --waiting: #fbbf24;       /* pending, warnings */
+  --waiting-wash: rgba(251, 191, 36, 0.12);
+  --waiting-edge: rgba(251, 191, 36, 0.35);
+
+  /* the toast: the one light surface */
+  --toast: #f1f5f9;
+  --toast-ink: #0b1220;
+  --toast-error: #fee2e2;
+  --toast-error-ink: #7f1d1d;
+
+  /* type */
+  --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-xs: 0.75rem;   /* 12 */
+  --text-sm: 0.875rem;  /* 14 */
+  --text-md: 1rem;      /* 16: the body floor */
+  --text-lg: 1.125rem;  /* 18 */
+  --text-xl: 1.375rem;  /* 22 */
+  --text-2xl: 1.75rem;  /* 28 */
+  --text-3xl: 2.5rem;   /* 40 */
+  --text-pool: 4rem;    /* 64: a pool, the page's one big number */
+  --tracking-label: 0.12em;
+
+  /* space: a 4 px base */
+  --s1: 0.25rem; --s2: 0.5rem; --s3: 0.75rem; --s4: 1rem; --s5: 1.25rem; --s6: 1.5rem; --s8: 2rem; --s14: 3.5rem;
+
+  /* shape and depth */
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.7);
+  --shadow-float: 0 14px 40px -12px rgba(0, 0, 0, 0.75);
+
+  /* motion: short, ease-out, state only */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast: 150ms;
+  --t-base: 220ms;
+  --t-stamp: 360ms;         /* the one authored moment: a draw's proof landing once it checks out */
+
+  /* layout */
+  --bar-h: 3.75rem;
+  --tabbar-h: 4rem;
+  --content-max: 76rem;
+}

@@ -1,0 +1,197 @@
+/* The shell (top bar, tab bar) and each view's layout: one dense dashboard of panels that stacks on phones. */
+
+.skip { position: absolute; left: var(--s4); top: -3rem; z-index: 60; padding: var(--s2) var(--s4); border-radius: var(--radius-control); background: var(--gold); color: var(--gold-ink); font-weight: 700; }
+.skip:focus { top: var(--s3); }
+
+/* ---------- top bar ---------- */
+.topbar { position: sticky; top: 0; z-index: 30; height: var(--bar-h); display: flex; align-items: center; gap: var(--s8); padding: 0 max(var(--s4), env(safe-area-inset-left)); background: color-mix(in srgb, var(--rail) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.brand { display: inline-flex; align-items: center; gap: var(--s3); color: var(--gold); text-decoration: none; font: 700 var(--text-md) var(--font-display); letter-spacing: var(--tracking-label); text-transform: uppercase; white-space: nowrap; }
+.brand-mark { display: grid; place-items: center; width: 2rem; height: 2rem; border: 1.5px solid var(--gold); border-radius: var(--radius-control); }
+.brand-mark .icon { width: 1.1rem; height: 1.1rem; }
+.brand:hover { color: var(--gold-lit); }
+.nav { display: flex; gap: var(--s1); align-self: stretch; }
+.nav a { display: inline-flex; align-items: center; gap: var(--s2); padding: 0 var(--s3); color: var(--text-muted); text-decoration: none; font: 600 var(--text-sm) var(--font-display); letter-spacing: var(--tracking-label); text-transform: uppercase; border-bottom: 2px solid transparent; }
+.nav a:hover { color: var(--text); }
+.nav a[aria-current='page'] { color: var(--text); border-bottom-color: var(--gold); }
+.bar-right { margin-left: auto; display: flex; align-items: center; gap: var(--s2); }
+.account-chip { max-width: 11rem; }
+.account-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- tab bar (phones) ---------- */
+.tabbar { display: none; }
+
+/* ---------- pages ---------- */
+#main:focus { outline: none; }
+.page { width: 100%; max-width: var(--content-max); margin: 0 auto; padding: var(--s6) max(var(--s4), env(safe-area-inset-left)) var(--s14); }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s4); margin-bottom: var(--s5); flex-wrap: wrap; }
+.page-head h1 { font-size: var(--text-2xl); text-transform: uppercase; letter-spacing: 0.05em; }
+.page-head p { color: var(--text-muted); max-width: 60ch; }
+.tabs .count { display: inline-block; min-width: 1.5rem; margin-left: var(--s2); padding: 0.15rem 0.45rem; border-radius: var(--radius-pill); background: var(--gold-wash); color: var(--gold); font-size: var(--text-xs); line-height: 1.4; letter-spacing: 0; text-align: center; }
+.tabs .count-alert { background: var(--danger-wash); color: var(--danger); }
+.tabs .count .icon { width: 0.875rem; height: 0.875rem; vertical-align: -0.15em; }
+/* a row's actions: side by side, apart when they wrap */
+.row-actions { display: inline-flex; flex-wrap: wrap; gap: var(--s2); justify-content: flex-end; }
+
+/* ---------- the dashboard grid ---------- */
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--s4); align-items: start; }
+.grid.dash { align-items: stretch; }
+.span-4 { grid-column: span 4; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; } .span-7 { grid-column: span 7; } .span-8 { grid-column: span 8; } .span-12 { grid-column: span 12; }
+.panel { container-type: inline-size; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: var(--s5); min-width: 0; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s3); }
+.panel-head h2 { font: 600 var(--text-sm) / 1.3 var(--font-display); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-muted); display: flex; align-items: center; gap: var(--s2); }
+.panel-head h2 .icon { color: var(--gold-deep); }
+/* a panel that is one of a pair, like the organizer's raffles: its name is its title */
+.panel-head h2.title { font-size: var(--text-xl); letter-spacing: 0.06em; color: var(--text); }
+.panel-head h2.title .icon { color: var(--gold); }
+.panel-foot { margin-top: var(--s4); display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+
+/* groups inside a panel: far apart from each other, close within */
+.sections { display: grid; gap: var(--s6); margin-top: var(--s5); }
+.sections.tight { gap: var(--s3); margin-top: 0; }
+.sections-foot { margin-top: var(--s6); padding-top: var(--s5); border-top: 1px solid var(--line-soft); }
+.facts-note { margin-top: var(--s3); }
+.panel-note { margin-top: var(--s5); }
+
+/* a pool: the page's big number, in the dashboard's focal frame; buying sits at the panel's foot */
+.pool { display: flex; flex-direction: column; border-color: var(--line-focal); }
+.pool-top { margin-bottom: var(--s4); }
+.pool-figure { display: flex; align-items: baseline; gap: var(--s2); flex-wrap: wrap; }
+.pool-figure strong { font: 700 var(--text-pool) / 0.95 var(--font-display); color: var(--gold); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.pool-figure span { font: 600 var(--text-lg) var(--font-display); color: var(--gold-deep); text-transform: uppercase; letter-spacing: 0.06em; }
+.pool-note { color: var(--text-muted); font-size: var(--text-sm); margin-top: var(--s1); }
+.draw-line { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s4); font-weight: 600; flex-wrap: wrap; }
+.draw-line .icon { color: var(--gold); }
+.draw-line .countdown { font-family: var(--font-display); color: var(--gold); letter-spacing: 0.02em; }
+.pool .seal { margin-top: var(--s2); }
+.buy { margin-top: auto; padding-top: var(--s4); border-top: 1px solid var(--line-soft); display: grid; gap: var(--s3); }
+.buy-row { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
+.buy-row .btn-primary { flex: 1 1 12rem; }
+.price { font-size: var(--text-sm); color: var(--text-muted); }
+.price strong { color: var(--text); font-weight: 600; }
+
+/* the wallet panel: the balance and its two actions; what is waiting and the last moves beside or under them */
+.balance { font: 700 var(--text-3xl) / 1 var(--font-display); font-variant-numeric: tabular-nums; }
+.balance span { font-size: var(--text-lg); color: var(--gold-deep); margin-left: var(--s1); }
+.balance + p { margin-top: var(--s2); }
+.status-dot { display: inline-flex; align-items: center; gap: var(--s2); font-size: var(--text-sm); margin-top: var(--s2); }
+.status-dot::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; flex: none; }
+.panel-head .status-dot { margin-top: 0; }
+.status-dot.on { color: var(--credit); }
+.status-dot.off { color: var(--waiting); }
+.wallet-body { display: grid; gap: var(--s5); }
+.wallet-body .rows + h3.label { margin-top: var(--s5); }
+@container (min-width: 36rem) {
+  .wallet-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s8); align-items: start; }
+}
+
+/* tickets per raffle */
+.ticket-group { display: grid; grid-template-columns: 4.5rem 1fr; gap: var(--s3); align-items: start; padding: var(--s3) 0; border-top: 1px solid var(--line-soft); }
+.ticket-group:first-of-type { border-top: 0; padding-top: 0; }
+.ticket-group > span { font: 600 var(--text-md) var(--font-display); text-transform: uppercase; letter-spacing: 0.06em; padding-top: 0.3rem; }
+
+/* tables: winners, requests, history */
+.table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.table th { text-align: left; font: 600 var(--text-xs) var(--font-display); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-muted); padding: 0 var(--s4) var(--s2) 0; border-bottom: 1px solid var(--line); }
+.table td { padding: var(--s3) var(--s4) var(--s3) 0; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.table :is(th, td):last-child { padding-right: 0; }
+.table tr:last-child td { border-bottom: 0; }
+.table .num { font-size: var(--text-md); }
+.table .right { text-align: right; }
+.table .unit { color: var(--text-muted); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; }
+.table tr:has(+ .verdict-row) td { border-bottom-color: transparent; }
+.verdict-row td { padding-top: 0; }
+
+/* a draw's proof, unfolded: what was checked, then the fingerprint and the seed */
+.proof-details { display: grid; gap: var(--s3); padding: var(--s3) 0 var(--s2) var(--s3); font-size: var(--text-sm); text-align: left; }
+.checklist > li { justify-content: flex-start; align-items: flex-start; gap: var(--s2); }
+.checklist .ok .icon { color: var(--credit); }
+.checklist .bad .icon { color: var(--danger); }
+.seed-line { display: grid; gap: var(--s1); justify-items: start; }
+.seed-line code { color: var(--text); word-break: break-all; }
+.how-tool { margin-top: var(--s5); }
+
+/* the House: who runs the raffles and what a deposit is, one quiet line */
+.house-line { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3) var(--s8); padding-block: var(--s4); }
+.house-line p { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); }
+.house-line strong { font: 600 var(--text-lg) var(--font-display); letter-spacing: 0.02em; }
+
+/* forms in panels */
+.form { display: grid; gap: var(--s4); }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: var(--s4); align-items: start; }
+.form-actions { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+details.more > summary { cursor: pointer; color: var(--gold); font-weight: 600; font-size: var(--text-sm); list-style: none; display: inline-flex; gap: var(--s2); align-items: center; min-height: 2.75rem; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more[open] > summary { margin-bottom: var(--s2); }
+
+/* a form's own error: under the field it is about, or next to the button that failed */
+.form-error { display: flex; gap: var(--s2); align-items: flex-start; color: var(--danger); font-weight: 600; font-size: var(--text-sm); }
+.form-error .icon { margin-top: 0.15em; }
+
+/* steps: how to deposit, how a draw is checked */
+.steps { counter-reset: step; display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 2rem 1fr; gap: var(--s3); }
+.steps li::before { content: counter(step); display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; border: 1px solid var(--line-strong); color: var(--gold); font: 600 var(--text-md) var(--font-display); }
+.steps strong { display: block; }
+
+/* section labels inside panels, and notices */
+.panel h3.label { margin: var(--s6) 0 var(--s2); }
+.panel h3.label:first-child, .panel .panel-head + h3.label { margin-top: 0; }
+.panel .notice { margin-top: var(--s3); }
+.sections > .notice, .sections > div > .notice, .sections.tight > .notice { margin-top: 0; }
+
+/* the organizer's danger zone */
+.danger-zone { border-color: var(--danger-edge); }
+.danger-zone .panel-head h2, .danger-zone .panel-head h2 .icon { color: var(--danger); }
+
+/* facts in a row: the House's numbers, a raffle's draw, the watcher's state */
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); gap: var(--s3) var(--s4); margin: 0; }
+.facts dt { font: 600 var(--text-xs) var(--font-display); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-muted); }
+.facts dd { margin: var(--s1) 0 0; font: 600 var(--text-xl) var(--font-display); font-variant-numeric: tabular-nums; }
+.facts dd.small { font: 600 var(--text-md) var(--font-body); }
+
+/* ---------- tablets and small desktops: two columns ---------- */
+@media (max-width: 74.99rem) {
+  .span-4, .span-5, .span-7, .span-8 { grid-column: span 6; }
+  .grid > .wallet-panel { grid-column: span 12; }
+}
+
+/* ---------- the top bar at tablet width: the nav needs the room, so the brand and account go to their marks ---------- */
+@media (min-width: 48rem) and (max-width: 63.99rem) {
+  .topbar { gap: var(--s5); }
+  .brand > span:last-child { display: none; }
+  .account-chip { width: 2.75rem; padding: 0; justify-content: center; }
+  .account-chip span { display: none; }
+}
+
+/* ---------- phones: one column, navigation at the thumb ---------- */
+@media (max-width: 47.99rem) {
+  :root { --text-pool: 3.25rem; }
+  .topbar { gap: var(--s3); }
+  .nav { display: none; }
+  .account-chip { display: none; }
+  .brand { font-size: var(--text-sm); }
+  .grid { grid-template-columns: 1fr; }
+  .grid > * { grid-column: auto !important; }
+  .house-line { grid-template-columns: 1fr; }
+  .page { padding-bottom: calc(var(--tabbar-h) + var(--s8) + env(safe-area-inset-bottom)); }
+  .panel { padding: var(--s4); }
+  .tabbar { position: fixed; inset: auto 0 0 0; z-index: 30; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: color-mix(in srgb, var(--rail) 94%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line); }
+  .tabbar a { display: grid; place-items: center; align-content: center; gap: 2px; color: var(--text-muted); text-decoration: none; font: 600 0.6875rem var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; }
+  .tabbar a .icon { width: 1.4rem; height: 1.4rem; }
+  .tabbar a[aria-current='page'] { color: var(--gold); }
+  .toast { bottom: calc(var(--tabbar-h) + var(--s3) + env(safe-area-inset-bottom)); }
+}
+
+/* ---------- tables in narrow panels stack, whatever the screen ---------- */
+@container (max-width: 34rem) {
+  .table.stack thead { display: none; }
+  .table.stack tr { display: grid; grid-template-columns: 1fr auto; gap: var(--s2) var(--s3); padding: var(--s3) 0; border-bottom: 1px solid var(--line-soft); }
+  .table.stack td { padding: 0; border: 0; }
+  .table.stack td[data-wide] { grid-column: 1 / -1; text-align: left; }
+  .table.winners tr { grid-template-areas: 'ticket prize' 'who proof'; align-items: center; }
+  .table.winners .c-ticket { grid-area: ticket; } .table.winners .c-prize { grid-area: prize; }
+  .table.winners .c-who { grid-area: who; } .table.winners .c-proof { grid-area: proof; }
+  .table.winners .c-when { display: none; }
+  .table.winners tr:has(+ .verdict-row) { border-bottom-color: transparent; }
+  .table.winners tr.verdict-row { display: block; padding-top: 0; }
+}
