@@ -6,9 +6,9 @@
 /* ---------- top bar ---------- */
 .topbar { position: sticky; top: 0; z-index: 30; height: var(--bar-h); display: flex; align-items: center; gap: var(--s8); padding: 0 max(var(--s4), env(safe-area-inset-left)); background: color-mix(in srgb, var(--rail) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .brand { display: inline-flex; align-items: center; gap: var(--s3); color: var(--gold); text-decoration: none; font: 700 var(--text-md) var(--font-display); letter-spacing: var(--tracking-label); text-transform: uppercase; white-space: nowrap; }
-.brand-mark { display: grid; place-items: center; width: 2rem; height: 2rem; border: 1.5px solid var(--gold); border-radius: 7px; }
+.brand-mark { display: grid; place-items: center; width: 2rem; height: 2rem; border: 1.5px solid var(--gold); border-radius: var(--radius-control); }
 .brand-mark .icon { width: 1.1rem; height: 1.1rem; }
-.brand:hover { color: #f0c75a; }
+.brand:hover { color: var(--gold-lit); }
 .nav { display: flex; gap: var(--s1); align-self: stretch; }
 .nav a { display: inline-flex; align-items: center; gap: var(--s2); padding: 0 var(--s3); color: var(--text-muted); text-decoration: none; font: 600 var(--text-sm) var(--font-display); letter-spacing: var(--tracking-label); text-transform: uppercase; border-bottom: 2px solid transparent; }
 .nav a:hover { color: var(--text); }
@@ -140,7 +140,7 @@ details.more[open] > summary { margin-bottom: var(--s2); }
 .sections > .notice, .sections > div > .notice, .sections.tight > .notice { margin-top: 0; }
 
 /* the organizer's danger zone */
-.danger-zone { border-color: rgba(248, 113, 113, 0.35); }
+.danger-zone { border-color: var(--danger-edge); }
 .danger-zone .panel-head h2, .danger-zone .panel-head h2 .icon { color: var(--danger); }
 
 /* facts in a row: the House's numbers, a raffle's draw, the watcher's state */

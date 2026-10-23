@@ -18,7 +18,7 @@ export const ui = {
 };
 export const QUANTITIES = [1, 2, 3, 5, 10];
 
-export const badge = (text: string, tone: 'credit' | 'waiting' | 'danger' | 'gold' | 'quiet') => `<span class="badge badge-${tone}">${esc(text)}</span>`;
+export const badge = (text: string, tone: 'credit' | 'waiting' | 'danger' | 'quiet') => `<span class="badge badge-${tone}">${esc(text)}</span>`;
 const isDue = (iso: string | null) => !!iso && Date.parse(iso) <= Date.now();
 
 /** "in 2 d 4 h", kept ticking by main.ts. */
