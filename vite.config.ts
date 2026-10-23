@@ -8,7 +8,7 @@ function contentSecurityPolicy(supabaseUrl: string): Plugin {
   const policy = [
     "default-src 'self'",
     "script-src 'self'",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self'",
     "img-src 'self' data:",
     `connect-src 'self' ${api} ${api.replace(/^http/, 'ws')}`,
     "object-src 'none'",
