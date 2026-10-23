@@ -33,4 +33,11 @@ npm test            # the database tests (local stack only)
 ```
 
 `npm run db:reset` wipes the local database and re-applies the migrations; `npm run db:types` regenerates
-`src/database.types.ts` after a schema change.
+`src/database.types.ts` after a schema change. `npm run dev:watcher` runs the deposit watcher against a mock of the game
+(never the real one), and `npm run odds` prints what the House keeps and risks (`docs/profitability.md`).
+
+## Design
+
+`PRODUCT.md` says who the page is for and what it must do; `DESIGN.md` records the visual system (the game's navy and
+gold, Oswald and Barlow, the panel grammar). `docs/REVIEW.md` has the whole review: findings, fixes, numbers and the
+deploy steps.
