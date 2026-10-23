@@ -1,0 +1,29 @@
+{
+  "name": "parlamentum-lottery",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests && tsc --noEmit -p supabase/functions",
+    "test": "vitest run",
+    "db:start": "npx -y supabase@2.119.0 start",
+    "db:stop": "npx -y supabase@2.119.0 stop",
+    "db:reset": "npx -y supabase@2.119.0 db reset",
+    "db:seed": "node scripts/dev-seed.mjs",
+    "db:env": "node scripts/local-env.mjs",
+    "db:types": "npx -y supabase@2.119.0 gen types typescript --local --schema public | prettier --parser typescript --print-width 120 > src/database.types.ts",
+    "dev:watcher": "node scripts/dev-watcher.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "prettier": "3.9.9",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.3"
+  }
+}
